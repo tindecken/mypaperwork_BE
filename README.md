@@ -13,3 +13,6 @@ bun run dev
 ```
 
 Open http://localhost:3000/ with your browser to see the result.
+
+## Reference
+https://github.com/Leka-Workshop/Bun-CRUD-App/blob/main/src/controllers/static-data.controller.ts
