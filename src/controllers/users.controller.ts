@@ -23,7 +23,6 @@ export const usersController = (app: Elysia) =>
                     // This route is protected by the Guard above
                     .post('/', async ({ body, jwt, set }) => {
                         try {
-
                             const newUser = new User();
                             newUser.username = body.username;
                             newUser.email = body.email;
@@ -68,7 +67,7 @@ export const usersController = (app: Elysia) =>
             )
 
             // Guard does not affect the following routes
-            .get('/', async ({ set }: Elysia.Set) => {
+            .get('/', async ({ set }) => {
                 try {
                     const users = await User.find({});
                     return users;
@@ -81,14 +80,14 @@ export const usersController = (app: Elysia) =>
                 }
             })
 
-            .get('/:id', async (handler: Elysia.Handler) => {
+            .get('/:id', async ({ set, params}) => {
                 try {
-                    const { id } = handler.params;
+                    const { id } = params;
 
                     const existingUser = await User.findById(id);
 
                     if (!existingUser) {
-                        handler.set.status = 404;
+                        set.status = 404;
                         return {
                             message: 'Requested resource was not found!',
                             status: 404,
@@ -97,7 +96,7 @@ export const usersController = (app: Elysia) =>
 
                     return existingUser;
                 } catch (e: unknown) {
-                    handler.set.status = 500;
+                    set.status = 500;
                     return {
                         message: 'Unable to retrieve the resource!',
                         status: 500,
@@ -105,11 +104,11 @@ export const usersController = (app: Elysia) =>
                 }
             })
 
-            .patch('/:id', async (handler: Elysia.Handler) => {
+            .patch('/:id', async ({ body, params, set}) => {
                 try {
-                    const { id } = handler.params;
+                    const { id } = params;
 
-                    const changes: Partial<IUser> = handler.body;
+                    const changes: Partial<IUser> = body;
 
                     const updatedUser = await User.findOneAndUpdate(
                         { _id: id },
@@ -118,7 +117,7 @@ export const usersController = (app: Elysia) =>
                     );
 
                     if (!updatedUser) {
-                        handler.set.status = 404;
+                        set.status = 404;
                         return {
                             message: `User with id: ${id} was not found.`,
                             status: 404,
@@ -127,7 +126,7 @@ export const usersController = (app: Elysia) =>
 
                     return updatedUser;
                 } catch (e: unknown) {
-                    handler.set.status = 500;
+                    set.status = 500;
                     return {
                         message: 'Unable to update resource!',
                         status: 500,
@@ -135,14 +134,14 @@ export const usersController = (app: Elysia) =>
                 }
             })
 
-            .delete('/:id', async (handler: Elysia.Handler) => {
+            .delete('/:id', async ({ params, set }) => {
                 try {
-                    const { id } = handler.params;
+                    const { id } = params;
 
                     const existingUser = await User.findById(id);
 
                     if (!existingUser) {
-                        handler.set.status = 404;
+                        set.status = 404;
                         return {
                             message: `User with id: ${id} was not found.`,
                             status: 404,
@@ -156,7 +155,7 @@ export const usersController = (app: Elysia) =>
                         status: 200,
                     };
                 } catch (e: unknown) {
-                    handler.set.status = 500;
+                    set.status = 500;
                     return {
                         message: 'Unable to delete resource!',
                         status: 500,
