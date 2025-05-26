@@ -19,7 +19,8 @@ export const auth = betterAuth({
 		},
     },
     trustedOrigins: [
-        "http://localhost:3000"],
+        "http://localhost:3000",
+        "http://localhost:1000"],
     emailAndPassword: {
         enabled: true,
     },
@@ -66,8 +67,10 @@ export const auth = betterAuth({
     },
     socialProviders: {
         google: {
+            prompt: "select_account",
             clientId: process.env["GOOGLE_CLIENT_ID"]!,
             clientSecret: process.env["GOOGLE_CLIENT_SECRET"]!,
+            callbackURL: "http://localhost:3001/api/auth/callback/google"
         }
     }
 });

@@ -11,6 +11,13 @@ const app = new Hono<{
 		session: typeof auth.$Infer.Session.session | null
 	}
 }>().basePath('/api');
+app.use('*', cors({
+	origin: ['http://tindecken.xyz', 'https://tindecken.xyz', 'http://localhost', 'http://localhost:1000', 'http://localhost:3001', 'https://mypaperwork.tindecken.xyz'],
+	allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+	allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
+	credentials: true,
+	exposeHeaders: ['Content-Length', 'X-Kuma-Revision']
+}))
 app.use(compress())
 app.on(["POST", "GET"], "/auth/*", (c) => {
 	return auth.handler(c.req.raw);
