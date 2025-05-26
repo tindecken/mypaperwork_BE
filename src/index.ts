@@ -1,9 +1,53 @@
 import { Hono } from 'hono'
+import { auth } from './better-auth/auth'
+import test from './routes/test'
+import authen from './routes/authen'
+import { compress } from '@hono/bun-compress'
+import { cors } from "hono/cors";
 
-const app = new Hono()
-
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
+const app = new Hono<{
+	Variables: {
+		user: typeof auth.$Infer.Session.user | null;
+		session: typeof auth.$Infer.Session.session | null
+	}
+}>().basePath('/api');
+app.use(compress())
+app.on(["POST", "GET"], "/auth/*", (c) => {
+	return auth.handler(c.req.raw);
+});
+app.notFound((c) => {
+  return c.text('404 Route not found !', 404)
 })
+app.route('/test', test)
+app.route('/authen', authen)
+// app.use("*", async (c, next) => {
+// 	const session = await auth.api.getSession({ headers: c.req.raw.headers });
+//   	if (!session) {
+//     	c.set("user", null);
+//     	c.set("session", null);
+//     	return next();
+//   	}
+ 
+//   	c.set("user", session.user);
+//   	c.set("session", session.session);
+//   	return next();
+// });
 
-export default app
+
+app.get("/session", async (c) => {
+	const session = c.get("session")
+	const user = c.get("user")
+	
+	if(!user) return c.body(null, 401);
+  	return c.json({
+	  session,
+	  user
+	});
+});
+
+
+
+export default { 
+  port: 3001, 
+  fetch: app.fetch, 
+} 

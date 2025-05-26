@@ -4,7 +4,6 @@ import { db } from "../../drizzle/index"; // your drizzle instance
 import { ulid } from "ulid";
  
 export const auth = betterAuth({
-    basePath: '/api',
     database: drizzleAdapter(db, {
         provider: "sqlite", // or "mysql", "sqlite",
     }),
