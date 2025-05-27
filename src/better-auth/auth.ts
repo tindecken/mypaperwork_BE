@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createAuthMiddleware } from "better-auth/api";
 import { db } from "../../drizzle/index"; // your drizzle instance
 import { ulid } from "ulid";
  
@@ -72,5 +73,15 @@ export const auth = betterAuth({
             clientSecret: process.env["GOOGLE_CLIENT_SECRET"]!,
             callbackURL: "http://localhost:3001/api/auth/callback/google"
         }
-    }
+    },
+    hooks: {
+        after: createAuthMiddleware(async (ctx) => {
+            if(ctx.path.startsWith("/sign-up")){
+                const newSession = ctx.context.newSession;
+                if(newSession){
+                    console.log('new session', newSession)
+                }
+            }
+        }),
+    },
 });

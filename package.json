@@ -1,6 +1,7 @@
 {
   "name": "mypaperwork_BE",
   "scripts": {
+    "push": "bun drizzle-kit push",
     "dev": "wrangler dev",
     "dev2": "bun run --hot src/index.ts",
     "deploy": "wrangler deploy --minify",
