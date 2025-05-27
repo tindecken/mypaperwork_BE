@@ -1,10 +1,7 @@
 import { Hono } from 'hono'
 import { auth } from './better-auth/auth'
-import test from './routes/test'
-import authen from './routes/authen'
 import { compress } from '@hono/bun-compress'
 import { cors } from "hono/cors";
-import user from './routes/user'
 
 const app = new Hono<{
 	Variables: {
@@ -14,7 +11,6 @@ const app = new Hono<{
 }>().basePath('/api');
 app.use("*", async (c, next) => {
 	const session = await auth.api.getSession({ headers: c.req.raw.headers });
-	console.log('session', session)
   	if (!session) {
     	c.set("user", null);
     	c.set("session", null);
@@ -38,10 +34,6 @@ app.on(["POST", "GET"], "/auth/*", (c) => {
 app.notFound((c) => {
   return c.text('404 Route not found !', 404)
 })
-app.route('/test', test)
-app.route('/authen', authen)
-app.route('/user', user)
-
 
 export default { 
   port: 3001, 
