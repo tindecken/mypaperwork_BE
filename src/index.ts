@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { auth } from './better-auth/auth'
 import { compress } from '@hono/bun-compress'
 import { cors } from "hono/cors";
+import { createCategory } from './controllers/categories/create';
 
 const app = new Hono<{
 	Variables: {
@@ -34,6 +35,9 @@ app.on(["POST", "GET"], "/auth/*", (c) => {
 app.notFound((c) => {
   return c.text('404 Route not found !', 404)
 })
+
+// categories
+app.route('/categories', createCategory)
 
 export default { 
   port: 3001, 

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@hono/bun-compress": "^0.1.0",
+    "@hono/typebox-validator": "^0.3.3",
     "@libsql/client": "^0.15.7",
     "better-auth": "^1.2.8",
     "dotenv": "^16.5.0",
