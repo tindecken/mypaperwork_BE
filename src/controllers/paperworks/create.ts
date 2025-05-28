@@ -25,6 +25,7 @@ const schema = T.Object({
   name: T.String({ maxLength: 200 }),
   note: T.Optional(T.String({ maxLength: 2000 })),
   issueAt: T.Optional(T.String()),
+  customFields: T.Optional(T.String()),
 });
 
 const client = new S3Client({
@@ -33,36 +34,33 @@ const client = new S3Client({
   bucket: process.env["MINIO_BUCKET"],
   endpoint: process.env["MINIO_ENDPOINT"],
 });
+
 export const createPaperWork = new Hono();
 
 // File upload needs to be handled directly through Hono's file handling middleware
 createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
-  const body = await c.req.parseBody();
+  const body = await c.req.formData()
   const userInfo = getUserInfo(c);
+  const files = body.getAll('files') as File[];
   console.log("FILE::::");
-  console.log(body['files[]'] as unknown as File[]);
-  // const formData = await c.req.formData();
-  // const filesEntries = formData.getAll("files");
-  // const files = filesEntries.filter((entry): entry is File => entry instanceof File);
+  console.log(files);
+
 
   // Check if category already exists for this user
-  return c.json({
-    success: false
-  })
   const existingCategory = await db
   .select()
   .from(categoriesTable)
   .where(
     and(
-      eq(categoriesTable.name, body["name"]),
-      eq(categoriesTable.userId, body["userId"]),
+      eq(categoriesTable.name, body.get('name') as string),
+      eq(categoriesTable.userId, body.get('userId') as string),
       eq(categoriesTable.isDeleted, 0)
     )
   );
     
 
   if (existingCategory.length > 0) {
-    throw new Error(`Category ${body.categoryId} not found!`);
+    throw new Error(`Category not found!`);
   }
 
   if (files && files.length > 20) {
@@ -70,6 +68,7 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
       {
         success: false,
         message: "You can only upload up to 20 files at a time!",
+        data: null
       },
       400
     );
@@ -77,8 +76,13 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
   if (files) {
     for (const file of files) {
       if (file.size > 1024 * 1024 * 20) {
-        throw new Error(
-          `File ${file.name} with file size ${file.size} is greater than 4MB! Please upload a smaller file.`
+        return c.json(
+          {
+            success: false,
+            message: `File ${file.name} with file size ${file.size} is greater than 4MB! Please upload a smaller file.`,
+            data: null
+          },
+          400
         );
       }
     }
@@ -88,9 +92,10 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
   // Insert paperwork
   const ppw: InsertPaperwork = {
     id: ppwULID,
-    name: body.name.trim(),
-    note: body.note,
-    issuedAt: body.issueAt,
+    name: body.get('name') as string,
+    note: body.get('note') as string,
+    issuedAt: body.get('issueAt') as string,
+    customFields: body.get('customFields') ? JSON.parse(body.get('customFields') as string) : { foo: '' },
     createdBy: userInfo?.name,
   };
   const insertedPaperWork = await db
@@ -99,12 +104,28 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     .returning();
 
   // Handle uncategorized category
-  const uncategorizedCategory = await db.query.categoriesTable.findFirst({
+  let uncategorizedCategory = await db.query.categoriesTable.findFirst({
     where: and(eq(categoriesTable.name, "Uncategorized")),
   });
 
   if (!uncategorizedCategory) {
-    throw new Error("Category Uncategorized not found!");
+    // create it
+    const newCategory = {
+      id: ulid(),
+      name: "Uncategorized",
+      note: "",
+      icon: null,
+      userId: userInfo?.id ?? 'system',
+      isDeleted: 0,
+      createdAt: new Date().toISOString(),
+      createdBy: userInfo?.name ?? 'system',
+      updatedAt: new Date().toISOString(),
+    };
+    const createdCategory = await db
+      .insert(categoriesTable)
+      .values(newCategory)
+      .returning();
+    uncategorizedCategory = createdCategory[0];
   }
 
   // Insert uncategorized relationship
@@ -112,16 +133,16 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     id: ulid(),
     paperworkId: insertedPaperWork[0].id,
     categoryId: uncategorizedCategory.id,
-    createdBy: userInfo?.name,
+    createdBy: userInfo?.name ?? 'system',
   };
   await db.insert(paperworksCategoriesTable).values(uncategorizedPwc);
 
   // Insert selected category relationship if provided
-  if (body.categoryId !== "") {
+  if (body.get('categoryId') !== "") {
     const pwc: typeof paperworksCategoriesTable.$inferInsert = {
       id: ulid(),
       paperworkId: insertedPaperWork[0].id,
-      categoryId: body.categoryId,
+      categoryId: body.get('categoryId') as string,
       createdBy: userInfo?.name,
     };
     await db.insert(paperworksCategoriesTable).values(pwc);
@@ -224,7 +245,7 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
   }
   const res: GenericResponseInterface = {
     success: true,
-    message: `Create paper work: ${body.name} successfully!`,
+    message: `Create paperwork: ${body.get('name') as string} successfully!`,
     data: null,
   };
   return c.json(res);
