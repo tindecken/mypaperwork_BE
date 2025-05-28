@@ -3,7 +3,7 @@ import {categoriesTable, documentsTable, paperworksCategoriesTable, paperworksTa
 import { db } from '../../drizzle'
 import type { GenericResponseInterface } from '../../models/GenericResponseInterface';
 import {eq, and, count } from "drizzle-orm"
-import { arrayBufferToBase64 } from '../../libs/libs';
+import { arrayBufferToBase64 } from '../../libs/arrayBufferToBase64';
 import { S3Client, type S3File } from 'bun';
 import { sessionInfo } from "../../middlewares/sessionInfo.ts";
 
@@ -18,7 +18,6 @@ export const getByCategoryId = (app: Elysia) =>
   app
       .use(sessionInfo)
       .get('/getPaperworks/:categoryId', async ({ params: {categoryId}, selectedFileId, query }) => {
-        console.log('selectedFileId', selectedFileId)
         const category = await db.select().from(categoriesTable).where(
           and(
             eq(categoriesTable.fileId, selectedFileId),

@@ -1,61 +1,176 @@
-import { Elysia, t } from 'elysia';
-import { categoriesTable, paperworksTable } from '../../drizzle/schema.ts'
-import { db } from '../../drizzle/index.ts'
-import type { GenericResponseInterface } from '../../models/GenericResponseInterface.ts';
-import {eq, and, ne} from "drizzle-orm"
-import {sessionInfo} from "../../middlewares/sessionInfo.ts";
-import { ulid } from 'ulid';
-import { paperworksCategories } from '../../drizzle/migrations/schema.ts';
-export const deleteCategory = (app: Elysia) =>
-  app
-      .use(sessionInfo)
-      .delete('/deleteCategory', async ({ userInfo, body, set }) => {
-          // check categoryId exist or not in table categories
-          const existingCategory = await db.select().from(categoriesTable).where(
-            and(
-                eq(categoriesTable.id, body.categoryId),
-                eq(categoriesTable.fileId, body.fileId),
-            ))
-          if (existingCategory.length === 0) {
-            set.status = 400
-            const res: GenericResponseInterface = {
-                success: false,
-                message: `Category does not exist!`,
-                data: null
-            }
-            return res
-          }
-          // Update all associated paperworksCategories to isDeleted = 1
-          await db.update(paperworksCategories)
-            .set({ 
-              isDeleted: 1,
-              updatedBy: userInfo.name
-            })
-            .where(eq(paperworksCategories.categoryId, body.categoryId));
-          // update the current name to name_ULID, isDeleted = 1
-          await db.update(categoriesTable)
-            .set({ 
-              name: `${existingCategory[0].name}_${ulid()}`,
-              isDeleted: 1,
-              updatedBy: userInfo.name
-            })
-            .where(
-              and(
-                eq(categoriesTable.id, body.categoryId),
-                eq(categoriesTable.fileId, body.fileId)
-              )
-            );
-          // return success response with message and data null
-          const res: GenericResponseInterface = {
-              success: true,
-              message: 'Delete category successfully!',
-              data: null
-          }
-          return res
-      }, {
-        auth: true,
-        body: t.Object({
-            fileId: t.String(),
-            categoryId: t.String(),
+import { Hono } from "hono";
+import { categoriesTable, paperworksCategoriesTable, paperworksTable } from "../../db/schema";
+import { db } from "../../db";
+import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
+import { eq, and, inArray, notInArray, sql } from "drizzle-orm";
+import { Type as T } from "@sinclair/typebox";
+import { tbValidator } from "@hono/typebox-validator";
+import { isAuthenticated } from "../../libs/isAuthenticated";
+import { getUserInfo } from "../../libs/getUserInfo";
+
+const schema = T.Object({
+  id: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
+  userId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
+});
+
+export const deleteCategory = new Hono();
+
+deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
+  try {
+    const body = await c.req.json();
+
+    // Check if user is authenticated
+    if (!isAuthenticated(c)) {
+      const response: GenericResponseInterface = {
+        success: false,
+        message: "Unauthorized - Authentication required",
+        data: null,
+      };
+      return c.json(response, 401);
+    }
+    
+    const userInfo = getUserInfo(c);
+    if(userInfo?.id !== body.userId){
+      const response: GenericResponseInterface = {
+        success: false,
+        message: "Forbidden - Invalid User",
+        data: null,
+      };
+      return c.json(response, 403);
+    }
+    
+    // Check if category exists and belongs to the user
+    const existingCategory = await db
+      .select()
+      .from(categoriesTable)
+      .where(
+        and(
+          eq(categoriesTable.id, body.id),
+          eq(categoriesTable.userId, body.userId),
+          eq(categoriesTable.isDeleted, 0)
+        )
+      );
+
+    if (existingCategory.length === 0) {
+      const response: GenericResponseInterface = {
+        success: false,
+        message: "Category not found or already deleted.",
+        data: null,
+      };
+      return c.json(response, 404);
+    }
+
+    // 1. Soft delete the category by setting isDeleted = 1
+    const updatedCategory = await db
+      .update(categoriesTable)
+      .set({
+        isDeleted: 1,
+        updatedAt: new Date().toISOString(),
+        updatedBy: userInfo?.name,
+      })
+      .where(
+        and(
+          eq(categoriesTable.id, body.id),
+          eq(categoriesTable.userId, body.userId)
+        )
+      )
+      .returning();
+
+    // 2. Find all paperworksCategories records for this category
+    const paperworksCategories = await db
+      .select()
+      .from(paperworksCategoriesTable)
+      .where(
+        and(
+          eq(paperworksCategoriesTable.categoryId, body.id),
+          eq(paperworksCategoriesTable.isDeleted, 0)
+        )
+      );
+
+    // Get the paperwork IDs related to this category
+    const paperworkIds = paperworksCategories.map(pc => pc.paperworkId);
+
+    // 3. Soft delete all paperworksCategories records for this category
+    let updatedPaperworksCategories = [];
+    if (paperworkIds.length > 0) {
+      updatedPaperworksCategories = await db
+        .update(paperworksCategoriesTable)
+        .set({
+          isDeleted: 1,
+          updatedAt: new Date().toISOString(),
+          updatedBy: userInfo?.name,
         })
-      });
+        .where(
+          and(
+            eq(paperworksCategoriesTable.categoryId, body.id),
+            eq(paperworksCategoriesTable.isDeleted, 0)
+          )
+        )
+        .returning();
+    }
+
+    // 4. Find paperworks that no longer have any active categories
+    let orphanedPaperworks = [];
+    let updatedPaperworks = [];
+    
+    if (paperworkIds.length > 0) {
+      // Find all active paperworksCategories for these paperworks
+      const remainingCategories = await db
+        .select()
+        .from(paperworksCategoriesTable)
+        .where(
+          and(
+            inArray(paperworksCategoriesTable.paperworkId, paperworkIds),
+            notInArray(paperworksCategoriesTable.categoryId, [body.id]),
+            eq(paperworksCategoriesTable.isDeleted, 0)
+          )
+        );
+
+      // Get list of paperwork IDs that still have other categories
+      const paperworksWithRemainingCategories = [...new Set(remainingCategories.map(rc => rc.paperworkId))];
+      
+      // Find paperworks that are now orphaned (no remaining categories)
+      orphanedPaperworks = paperworkIds.filter(id => !paperworksWithRemainingCategories.includes(id));
+
+      // 5. Soft delete the orphaned paperworks
+      if (orphanedPaperworks.length > 0) {
+        updatedPaperworks = await db
+          .update(paperworksTable)
+          .set({
+            isDeleted: 1,
+            updatedAt: new Date().toISOString(),
+            updatedBy: userInfo?.name,
+          })
+          .where(
+            and(
+              inArray(paperworksTable.id, orphanedPaperworks),
+              eq(paperworksTable.isDeleted, 0)
+            )
+          )
+          .returning();
+      }
+    }
+
+    const response: GenericResponseInterface = {
+      success: true,
+      message: `Category '${existingCategory[0].name}' deleted successfully! ${updatedPaperworksCategories.length} paperwork-category associations and ${updatedPaperworks.length} orphaned paperworks were also soft-deleted.`,
+      data: {
+        category: updatedCategory[0],
+        paperworkCategoriesDeleted: updatedPaperworksCategories.length,
+        paperworksDeleted: updatedPaperworks.length
+      },
+    };
+
+    return c.json(response, 200);
+  } catch (error) {
+    console.error("Error deleting category:", error);
+
+    const response: GenericResponseInterface = {
+      success: false,
+      message: "Failed to delete category due to an internal error",
+      data: null,
+    };
+
+    return c.json(response, 500);
+  }
+});

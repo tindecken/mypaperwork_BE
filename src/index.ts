@@ -3,6 +3,9 @@ import { auth } from './better-auth/auth'
 import { compress } from '@hono/bun-compress'
 import { cors } from "hono/cors";
 import { createCategory } from './controllers/categories/create';
+import { editCategory } from './controllers/categories/edit';
+import { deleteCategory } from './controllers/categories/delete';
+import { createPaperWork } from './controllers/paperworks/create';
 
 const app = new Hono<{
 	Variables: {
@@ -38,6 +41,11 @@ app.notFound((c) => {
 
 // categories
 app.route('/categories', createCategory)
+app.route('/categories', editCategory)
+app.route('/categories', deleteCategory)
+
+// paperworks
+app.route('/paperworks', createPaperWork)
 
 export default { 
   port: 3001, 

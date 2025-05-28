@@ -7,6 +7,7 @@ import { ulid } from "ulid";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
 import { isAuthenticated } from "../../libs/isAuthenticated";
+import { getUserInfo   } from "../../libs/getUserInfo";
 
 const schema = T.Object({
   name: T.String({ maxLength: 100 }),
@@ -19,6 +20,8 @@ export const createCategory = new Hono();
 
 createCategory.post("/create", tbValidator("json", schema), async (c) => {
   try {
+    const body = await c.req.json();
+
     // Check if user is authenticated
     if (!isAuthenticated(c)) {
       const response: GenericResponseInterface = {
@@ -29,16 +32,23 @@ createCategory.post("/create", tbValidator("json", schema), async (c) => {
       return c.json(response, 401);
     }
     
-    // Get and parse the request body
-    const body = await c.req.json();
-
+    const userInfo = getUserInfo(c);
+    if(userInfo?.id !== body.userId){
+      const response: GenericResponseInterface = {
+        success: false,
+        message: "Forbidden - Invalid User",
+        data: null,
+      };
+      return c.json(response, 403);
+    }
+    
     // Check if category already exists for this user
     const existingCategory = await db
       .select()
       .from(categoriesTable)
       .where(
         and(
-          eq(categoriesTable.name, body.name),
+          eq(categoriesTable.name, body.name.trim()),
           eq(categoriesTable.userId, body.userId),
           eq(categoriesTable.isDeleted, 0)
         )
@@ -55,12 +65,13 @@ createCategory.post("/create", tbValidator("json", schema), async (c) => {
     // Create new category
     const newCategory = {
       id: ulid(),
-      name: body.name,
-      note: body.note || null,
-      icon: body.icon || null,
+      name: body.name.trim(),
+      note: body.note?.trim() || null,
+      icon: body.icon?.trim() || null,
       userId: body.userId,
       isDeleted: 0,
       createdAt: new Date().toISOString(),
+      createdBy: userInfo?.name,
       updatedAt: new Date().toISOString(),
     };
 
@@ -71,7 +82,7 @@ createCategory.post("/create", tbValidator("json", schema), async (c) => {
 
     const response: GenericResponseInterface = {
       success: true,
-      message: `Category '${body.name}' created successfully!`,
+      message: `Category '${body.name.trim()}' created successfully!`,
       data: createdCategory[0],
     };
 

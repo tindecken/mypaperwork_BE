@@ -10,7 +10,7 @@ import { db } from "../../drizzle";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { eq, and, count } from "drizzle-orm";
 import { S3Client, type S3File } from "bun";
-import { arrayBufferToBase64 } from "../../libs/libs";
+import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64";
 import { sessionInfo } from "../../middlewares/sessionInfo.ts";
 import { redis } from "bun";
 

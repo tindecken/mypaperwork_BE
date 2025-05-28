@@ -12,7 +12,7 @@ import { eq, and, ne } from "drizzle-orm";
 import { sessionInfo } from "../../middlewares/sessionInfo.ts";
 import type { PaperworkDetails } from "../../models/PaperworkDetails.ts";
 import { S3Client, type S3File } from "bun";
-import { arrayBufferToBase64 } from "../../libs/libs.ts";
+import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64.js";
 
 const client = new S3Client({
   accessKeyId: process.env["MINIO_ACCESSKEYID"],
