@@ -126,6 +126,9 @@ export const categoriesTable = sqliteTable(
 
 export const paperworksTable = sqliteTable("paperworks", {
   id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   note: text("note"),
   customFields: text({ mode: 'json' }).$type<{ foo: string }>(),

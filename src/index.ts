@@ -3,10 +3,11 @@ import { auth } from './better-auth/auth'
 import { compress } from '@hono/bun-compress'
 import { cors } from "hono/cors";
 import { createCategory } from './controllers/categories/create';
-import { editCategory } from './controllers/categories/edit';
+import { updateCategory } from './controllers/categories/update';
 import { deleteCategory } from './controllers/categories/delete';
 import { createPaperWork } from './controllers/paperworks/create';
 import { getById } from './controllers/paperworks/getById';
+import { updatePaperWork } from './controllers/paperworks/update';
 
 const app = new Hono<{
 	Variables: {
@@ -42,12 +43,13 @@ app.notFound((c) => {
 
 // categories
 app.route('/categories', createCategory)
-app.route('/categories', editCategory)
+app.route('/categories', updateCategory)
 app.route('/categories', deleteCategory)
 
 // paperworks
 app.route('/paperworks', createPaperWork)
 app.route('/paperworks', getById)
+app.route('/paperworks', updatePaperWork)
 
 
 export default { 

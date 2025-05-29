@@ -21,7 +21,6 @@ import { getUserInfo } from "../../libs/getUserInfo";
 import { isAuthenticated } from "../../libs/isAuthenticated";
 
 const schema = T.Object({
-  // Files needs to be handled separately, not through TypeBox
   categoryId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
   name: T.String({ maxLength: 200 }),
   note: T.Optional(T.String({ maxLength: 2000 })),
@@ -72,7 +71,7 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     .where(
       and(
         eq(categoriesTable.id, body.get("categoryId") as string),
-        eq(categoriesTable.userId, body.get("userId") as string),
+        eq(categoriesTable.userId, userInfo?.id!),
         eq(categoriesTable.isDeleted, 0)
       )
     );
@@ -115,6 +114,7 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
   // Insert paperwork
   const ppw: InsertPaperwork = {
     id: ppwULID,
+    userId: userInfo?.id!,
     name: body.get("name") as string,
     note: body.get("note") as string,
     issuedAt: body.get("issueAt") as string,

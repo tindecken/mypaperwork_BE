@@ -10,14 +10,15 @@ import { isAuthenticated } from "../../libs/isAuthenticated";
 import { getUserInfo } from "../../libs/getUserInfo";
 
 const schema = T.Object({
+    categoryId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
     name: T.String({ maxLength: 100 }),
     note: T.Optional(T.String({ maxLength: 2000 })),
     icon: T.Optional(T.String({ maxLength: 100 })),
     userId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
   });
-export const editCategory = new Hono();
+export const updateCategory = new Hono();
 
-editCategory.put('/editCategory', tbValidator("json", schema), async (c) => {
+updateCategory.put('/update', tbValidator("json", schema), async (c) => {
     try{
         const body = await c.req.json();
         // Check if user is authenticated

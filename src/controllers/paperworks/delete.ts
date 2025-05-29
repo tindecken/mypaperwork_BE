@@ -1,64 +1,32 @@
-import { Elysia, t } from "elysia";
-import { sessionInfo } from "../../middlewares/sessionInfo.ts";
-import {
-  documentsTable,
-  paperworksCategoriesTable,
-  paperworksTable,
-} from "../../drizzle/schema.ts";
-import { db } from "../../drizzle/index";
-import { eq } from "drizzle-orm";
-import type { GenericResponseInterface } from "../../models/GenericResponseInterface.ts";
+import { Hono } from "hono";
+import { Type as T } from "@sinclair/typebox";
+import { tbValidator } from "@hono/typebox-validator";
 
-export const deletePaperWork = (app: Elysia) =>
-  app.use(sessionInfo).delete(
-    "/delete/:paperworkId",
-    async ({ params: { paperworkId }, selectedFileId, user, set }) => {
-      console.log('selectedFileId', selectedFileId)
-      console.log('user', user)
-      const paperWork = await db
-        .select()
-        .from(paperworksTable)
-        .where(eq(paperworksTable.id, paperworkId));
-      if (paperWork.length === 0) {
-        throw new Error("Paper work not found");
-      }
-      if (!isAdminRights) {
-        set.status = 403;
-        const res: GenericResponseInterface = {
-          success: false,
-          message: "Forbidden",
-          data: null,
-        };
-        return res;
-      }
-      // update is Deleted = 1 for paperworksTable
-      await db
-        .update(paperworksTable)
-        .set({ isDeleted: 1 })
-        .where(eq(paperworksTable.id, paperworkId));
-      // update is Deleted = 1 for documentsTable
-      await db
-        .update(documentsTable)
-        .set({ isDeleted: 1 })
-        .where(eq(documentsTable.paperworkId, paperworkId));
-      // update isDeleted = 1 for paperworksCategoriesTable
-      await db
-        .update(paperworksCategoriesTable)
-        .set({ isDeleted: 1 })
-        .where(eq(paperworksCategoriesTable.paperworkId, paperworkId));
+import { paperworksTable, type InsertPaperwork } from "../../db/schema";
+import { db } from "../../db";
+import { and, eq } from "drizzle-orm";
+import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
+import { getUserInfo } from "../../libs/getUserInfo";
+import { isAuthenticated } from "../../libs/isAuthenticated";
 
-      // return success response with message and data as null
-      const res: GenericResponseInterface = {
-        success: true,
-        message: `Delete paperwork ${paperWork[0].name} successfully!`,
-        data: null,
-      };
-      return res;
-    },
-    {
-      auth: true,
-      params: t.Object({
-        paperworkId: t.String({ minLength: 26, maxLength: 26 }),
-      }),
-    }
-  );
+const paramSchema = T.Object({
+  paperworkId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
+});
+
+export const updatePaperWork = new Hono();
+
+updatePaperWork.delete("/:paperworkId", tbValidator("param", paramSchema), async (c) => {
+  // Check if user is authenticated
+  if (!isAuthenticated(c)) {
+    const response: GenericResponseInterface = {
+      success: false,
+      message: "Unauthorized - Authentication required",
+      data: null,
+    };
+    return c.json(response, 401);
+  }
+  const paperworkId = c.req.param("paperworkId");
+  const userInfo = getUserInfo(c);
+  
+
+});
