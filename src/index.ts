@@ -6,6 +6,7 @@ import { createCategory } from './controllers/categories/create';
 import { editCategory } from './controllers/categories/edit';
 import { deleteCategory } from './controllers/categories/delete';
 import { createPaperWork } from './controllers/paperworks/create';
+import { getById } from './controllers/paperworks/getById';
 
 const app = new Hono<{
 	Variables: {
@@ -31,7 +32,7 @@ app.use('*', cors({
 	credentials: true,
 	exposeHeaders: ['Content-Length', 'X-Kuma-Revision']
 }))
-app.use(compress())
+app.use(compress({ encoding: "gzip"}))
 app.on(["POST", "GET"], "/auth/*", (c) => {
 	return auth.handler(c.req.raw);
 });
@@ -46,8 +47,11 @@ app.route('/categories', deleteCategory)
 
 // paperworks
 app.route('/paperworks', createPaperWork)
+app.route('/paperworks', getById)
+
 
 export default { 
   port: 3001, 
   fetch: app.fetch, 
+  idleTimeout: 60
 } 

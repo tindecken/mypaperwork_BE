@@ -3,8 +3,8 @@ import { createPaperWork } from "./create";
 import { updatePaperWork } from "./update";
 import { deletePaperWork } from "./delete";
 import { getByFileid } from "./getByFileId";
-import { getById } from "./getByPaperworkId";
-import { getByIdReturnBlob } from "./getByPaperworkId";
+import { getById } from "./getById";
+import { getByIdReturnBlob } from "./getById";
 import { getByCategoryId } from "./getByFileIdCategoryId";
 
 // Notes: deleteFile not imported for safety reasons

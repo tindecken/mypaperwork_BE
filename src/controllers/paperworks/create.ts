@@ -50,6 +50,18 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     return c.json(response, 401);
   }
   const body = await c.req.formData();
+
+  // check customFields is valid JSON object
+  const regex = /^\[\s*(?:\{\s*"key"\s*:\s*"[^"]*"\s*,\s*"value"\s*:\s*"[^"]*"\s*\}(?:\s*,\s*\{\s*"key"\s*:\s*"[^"]*"\s*,\s*"value"\s*:\s*"[^"]*"\s*\})*)\s*\]$/;
+  const customFields = body.get("customFields") as string;
+  if (customFields && !regex.test(customFields)) {
+    const response: GenericResponseInterface = {
+      success: false,
+      message: "customFields must be a valid JSON array with key and value",
+      data: null,
+    };
+    return c.json(response, 400);
+  }
   const userInfo = getUserInfo(c);
   const files = body.getAll("files") as File[];
 
@@ -59,14 +71,19 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     .from(categoriesTable)
     .where(
       and(
-        eq(categoriesTable.name, body.get("name") as string),
+        eq(categoriesTable.id, body.get("categoryId") as string),
         eq(categoriesTable.userId, body.get("userId") as string),
         eq(categoriesTable.isDeleted, 0)
       )
     );
 
-  if (existingCategory.length > 0) {
-    throw new Error(`Category not found!`);
+  if (existingCategory.length === 0) {
+    const response: GenericResponseInterface = {
+      success: false,
+      message: "Category was not existed.",
+      data: null,
+    };
+    return c.json(response, 400);
   }
 
   if (files && files.length > 20) {
@@ -103,47 +120,13 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     issuedAt: body.get("issueAt") as string,
     customFields: body.get("customFields")
       ? JSON.parse(body.get("customFields") as string)
-      : { foo: "" },
+      : null,
     createdBy: userInfo?.name,
   };
   const insertedPaperWork = await db
     .insert(paperworksTable)
     .values(ppw)
     .returning();
-
-  // Handle uncategorized category
-  let uncategorizedCategory = await db.query.categoriesTable.findFirst({
-    where: and(eq(categoriesTable.name, "Uncategorized")),
-  });
-
-  if (!uncategorizedCategory) {
-    // create it
-    const newCategory = {
-      id: ulid(),
-      name: "Uncategorized",
-      note: "",
-      icon: null,
-      userId: userInfo?.id ?? "system",
-      isDeleted: 0,
-      createdAt: new Date().toISOString(),
-      createdBy: userInfo?.name ?? "system",
-      updatedAt: new Date().toISOString(),
-    };
-    const createdCategory = await db
-      .insert(categoriesTable)
-      .values(newCategory)
-      .returning();
-    uncategorizedCategory = createdCategory[0];
-  }
-
-  // Insert uncategorized relationship
-  const uncategorizedPwc: typeof paperworksCategoriesTable.$inferInsert = {
-    id: ulid(),
-    paperworkId: insertedPaperWork[0].id,
-    categoryId: uncategorizedCategory.id,
-    createdBy: userInfo?.name ?? "system",
-  };
-  await db.insert(paperworksCategoriesTable).values(uncategorizedPwc);
 
   // Insert selected category relationship if provided
   if (body.get("categoryId") !== "") {
@@ -162,7 +145,12 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     for (const file of files) {
       const fileArrayBuffer = await file.arrayBuffer();
       if (fileArrayBuffer.byteLength === 0) {
-        throw new Error(`File ${file.name} is empty!`);
+        const response: GenericResponseInterface = {
+          success: false,
+          message: `File ${file.name} is empty!`,
+          data: null,
+        };
+        return c.json(response, 400);
       }
 
       const filePath = `${userInfo?.id}\\${insertedPaperWork[0].id}\\${file.name}`;
@@ -254,7 +242,7 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
   const res: GenericResponseInterface = {
     success: true,
     message: `Create paperwork: ${body.get("name") as string} successfully!`,
-    data: null,
+    data: insertedPaperWork[0].id,
   };
   return c.json(res);
 });
