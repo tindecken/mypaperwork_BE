@@ -131,7 +131,7 @@ export const paperworksTable = sqliteTable("paperworks", {
     .references(() => usersTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   note: text("note"),
-  customFields: text({ mode: 'json' }).$type<{ foo: string }>(),
+  customFields: text({ mode: 'json' }),
   issuedAt: text("issuedAt"),
   createdAt: text('createdAt')
   .default(sql`(CURRENT_TIMESTAMP)`)
