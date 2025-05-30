@@ -8,6 +8,7 @@ import { deleteCategory } from './controllers/categories/delete';
 import { createPaperWork } from './controllers/paperworks/create';
 import { getById } from './controllers/paperworks/getById';
 import { updatePaperWork } from './controllers/paperworks/update';
+import { deletePaperWork } from './controllers/paperworks/delete';
 
 const app = new Hono<{
 	Variables: {
@@ -50,6 +51,7 @@ app.route('/categories', deleteCategory)
 app.route('/paperworks', createPaperWork)
 app.route('/paperworks', getById)
 app.route('/paperworks', updatePaperWork)
+app.route('/paperworks', deletePaperWork)
 
 
 export default { 
