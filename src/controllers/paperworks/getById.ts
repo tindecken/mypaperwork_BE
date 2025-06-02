@@ -58,6 +58,7 @@ getById.get("/get/:paperworkId", async (c) => {
         eq(paperworksCategoriesTable.isDeleted, 0)
       )
     );
+  console.log('paperworkCategories', paperworkCategories)
   const categories: SelectCategory[] = [];
   await Promise.all(
     paperworkCategories.map(async (pwCat) => {
@@ -68,7 +69,6 @@ getById.get("/get/:paperworkId", async (c) => {
           and(
             eq(categoriesTable.id, pwCat.categoryId),
             eq(categoriesTable.isDeleted, 0),
-            ne(categoriesTable.name, "Uncategorized")
           )
         );
       if (cat.length > 0) {

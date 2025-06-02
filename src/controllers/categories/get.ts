@@ -46,9 +46,7 @@ getCategories.get("/get", async (c) => {
       })
     );
     
-    const dataResponse: IGetCategoriesResponse = {
-      categories: categoriesWithCount
-    };
+    const dataResponse: IGetCategoriesResponse = categoriesWithCount;
     const response: GenericResponseInterface = {
       success: true,
       message: "Categories fetched successfully",

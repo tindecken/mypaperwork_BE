@@ -4,6 +4,4 @@ export interface CategoryWithPaperworkCount extends SelectCategory {
     paperworkCount: number;
 }
 
-export interface IGetCategoriesResponse {
-    categories: CategoryWithPaperworkCount[]
-}
+export type IGetCategoriesResponse = CategoryWithPaperworkCount[];

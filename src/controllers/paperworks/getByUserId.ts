@@ -23,8 +23,8 @@ const client = new S3Client({
 });1
 
 const querySchema = T.Object({
-  pageNumber: T.Optional(T.Number()),
-  pageSize: T.Optional(T.Number()),
+  pageNumber: T.Optional(T.String()),
+  pageSize: T.Optional(T.String()),
   filterValue: T.Optional(T.String()),
   sortField: T.Optional(T.String()),
   sortDirection: T.Optional(T.Enum({asc: 'asc', desc: 'desc'})),
