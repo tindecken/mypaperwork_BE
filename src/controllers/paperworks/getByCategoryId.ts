@@ -38,8 +38,8 @@ export const getByCategoryId = new Hono();
 
 getByCategoryId.get(
   "/getByCategory/:categoryId",
-  tbValidator("query", querySchema),
   tbValidator("param", paramSchema),
+  tbValidator("query", querySchema),
   async (c) => {
     console.log("query", c.req.query());
     try {
