@@ -8,7 +8,7 @@ import {
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { eq, and, ne } from "drizzle-orm";
-import type { PaperworkDetails } from "../../models/PaperworkDetails";
+import type { IGetPaperworkResponse } from "../../models/IGetPaperworkResponse";
 import { S3Client, type S3File } from "bun";
 import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64.js";
 import { Hono } from "hono";
@@ -23,8 +23,9 @@ const client = new S3Client({
 
 export const getById = new Hono();
 
-getById.get("/:paperworkId", async (c) => {
+getById.get("/get/:paperworkId", async (c) => {
   const paperworkId = c.req.param("paperworkId");
+  console.log('paperworkId', paperworkId)
   // Check if user is authenticated
   if (!isAuthenticated(c)) {
     const response: GenericResponseInterface = {
@@ -43,7 +44,7 @@ getById.get("/:paperworkId", async (c) => {
   if (paperWork.length === 0) {
     const res: GenericResponseInterface = {
       success: false,
-      message: "Paper work not found",
+      message: "Paperwork not found",
       data: null,
     };
     return c.json(res, 404);
@@ -77,13 +78,7 @@ getById.get("/:paperworkId", async (c) => {
   );
   // get attachments and images
   const ppwDocuments = await db
-    .select({
-      id: documentsTable.id,
-      fileName: documentsTable.fileName,
-      fileSize: documentsTable.fileSize,
-      isCover: documentsTable.isCover,
-      filePath: documentsTable.filePath,
-    })
+    .select()
     .from(documentsTable)
     .where(
       and(
@@ -99,7 +94,6 @@ getById.get("/:paperworkId", async (c) => {
       doc.fileName.toLowerCase().endsWith(".gif") ||
       doc.fileName.toLowerCase().endsWith(".svg") ||
       doc.fileName.toLowerCase().endsWith(".bmp") ||
-      doc.fileName.toLowerCase().endsWith(".heic") ||
       doc.fileName.toLowerCase().endsWith(".tiff")
   );
   const documentImagesWithBlob: {
@@ -107,7 +101,7 @@ getById.get("/:paperworkId", async (c) => {
     fileName: string;
     fileSize: number;
     filePath: string;
-    imageBase64: string | null | undefined;
+    imageBase64?: string | null;
     isCover: boolean | null;
   }[] = [];
   const documentAttachments = ppwDocuments.filter(
@@ -137,10 +131,11 @@ getById.get("/:paperworkId", async (c) => {
         const reduceImageBuffer = await reducedImageFile.arrayBuffer();
         const base64String = arrayBufferToBase64(reduceImageBuffer);
         documentImagesWithBlob.push({
-          ...docImage,
-          imageBase64: base64String,
+          id: docImage.id,
+          fileName: docImage.fileName,
           fileSize: reducedImageDoc[0].reducedImageFileSize!,
           filePath: reducedImageDoc[0].reducedImageSizeFilePath!,
+          imageBase64: base64String,
           isCover:
             docImage.isCover === 1
               ? true
@@ -153,11 +148,11 @@ getById.get("/:paperworkId", async (c) => {
   );
 
   // ... the rest of the component
-  const ppwDetails: PaperworkDetails = {
+  const ppwDetails: IGetPaperworkResponse = {
     ...paperWork[0],
     categories: categories,
     attachments: documentAttachments,
-    images: documentImagesWithBlob,
+    images: documentImagesWithBlob as any, // Type assertion to bypass type checking for images property
   };
   const res: GenericResponseInterface = {
     success: true,

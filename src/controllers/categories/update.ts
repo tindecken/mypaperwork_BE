@@ -87,7 +87,6 @@ updateCategory.put('/update', tbValidator("json", schema), async (c) => {
     }
     catch(error){
         console.error("Error editing category:", error);
-
         const response: GenericResponseInterface = {
           success: false,
           message: "Failed to edit category due to an internal error",

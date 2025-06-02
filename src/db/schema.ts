@@ -247,5 +247,5 @@ export type SelectPaperworkWithCategory = SelectPaperwork & {
   coverFileName?: string | null;
   documentCount: number | null;
 };
-
+export type SelectDocument = typeof documentsTable.$inferSelect;
 export type InsertTheme = typeof themesTable.$inferInsert;

@@ -9,6 +9,9 @@ import { createPaperWork } from './controllers/paperworks/create';
 import { getById } from './controllers/paperworks/getById';
 import { updatePaperWork } from './controllers/paperworks/update';
 import { deletePaperWork } from './controllers/paperworks/delete';
+import { getCategories } from './controllers/categories/get';
+import { getByUserId } from './controllers/paperworks/getByUserId';
+import { getByCategoryId } from './controllers/paperworks/getByCategoryId';
 
 const app = new Hono<{
 	Variables: {
@@ -46,12 +49,15 @@ app.notFound((c) => {
 app.route('/categories', createCategory)
 app.route('/categories', updateCategory)
 app.route('/categories', deleteCategory)
+app.route('/categories', getCategories)
 
 // paperworks
 app.route('/paperworks', createPaperWork)
 app.route('/paperworks', getById)
 app.route('/paperworks', updatePaperWork)
-app.route('/paperworks', deletePaperWork)
+app.route('/paperworks', deletePaperWork) //
+app.route('/paperworks', getByUserId) // get all paperworks by user id
+app.route('/paperworks', getByCategoryId) // get all paperworks by category id
 
 
 export default { 
