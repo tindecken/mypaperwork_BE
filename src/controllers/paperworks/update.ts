@@ -14,7 +14,7 @@ const schema = T.Object({
   name: T.String({ maxLength: 200 }),
   note: T.Optional(T.String({ maxLength: 2000 })),
   issueAt: T.Optional(T.String()),
-  customFields: T.Optional(T.String()),
+  customFields: T.Optional(T.Union([T.String(), T.Null()])),
 });
 
 export const updatePaperWork = new Hono();

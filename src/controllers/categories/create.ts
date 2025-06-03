@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { categoriesTable } from "../../db/schema";
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
@@ -72,7 +72,7 @@ createCategory.post("/create", tbValidator("json", schema), async (c) => {
       isDeleted: 0,
       createdAt: new Date().toISOString(),
       createdBy: userInfo?.name,
-      updatedAt: new Date().toISOString(),
+      updatedAt: sql`(CURRENT_TIMESTAMP)`,
     };
 
     const createdCategory = await db

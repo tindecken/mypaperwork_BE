@@ -4,7 +4,7 @@ import { tbValidator } from "@hono/typebox-validator";
 
 import { paperworksTable, paperworksCategoriesTable, type InsertPaperwork } from "../../db/schema";
 import { db } from "../../db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { getUserInfo } from "../../libs/getUserInfo";
 import { isAuthenticated } from "../../libs/isAuthenticated";
@@ -64,7 +64,7 @@ deletePaperWork.delete("/:paperworkId", tbValidator("param", paramSchema), async
       .update(paperworksTable)
       .set({
         isDeleted: 1,
-        updatedAt: new Date().toISOString(),
+        updatedAt: sql`(CURRENT_TIMESTAMP)`,
         updatedBy: userInfo.id
       })
       .where(
@@ -79,7 +79,7 @@ deletePaperWork.delete("/:paperworkId", tbValidator("param", paramSchema), async
       .update(paperworksCategoriesTable)
       .set({
         isDeleted: 1,
-        updatedAt: new Date().toISOString(),
+        updatedAt: sql`(CURRENT_TIMESTAMP)`,
         updatedBy: userInfo.id
       })
       .where(eq(paperworksCategoriesTable.paperworkId, paperworkId));

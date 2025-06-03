@@ -12,6 +12,7 @@ import { deletePaperWork } from './controllers/paperworks/delete';
 import { getCategories } from './controllers/categories/get';
 import { getByUserId } from './controllers/paperworks/getByUserId';
 import { getByCategoryId } from './controllers/paperworks/getByCategoryId';
+import { updateCategoriesByPaperworkId } from './controllers/paperworks/updateCategories';
 
 const app = new Hono<{
 	Variables: {
@@ -58,6 +59,7 @@ app.route('/paperworks', updatePaperWork)
 app.route('/paperworks', deletePaperWork) //
 app.route('/paperworks', getByUserId) // get all paperworks by user id
 app.route('/paperworks', getByCategoryId) // get all paperworks by category id
+app.route('/paperworks', updateCategoriesByPaperworkId) // update categories for paperwork
 
 
 export default { 

@@ -1,3 +1,20 @@
+/**
+ * Categories Delete Controller
+ * 
+ * This controller handles category deletion with cascade operations.
+ * 
+ * Related functionality:
+ * 
+ * @see deletePaperWork - A similar function in the paperworks controller that
+ * performs soft deletion of paperworks. That function sets isDeleted=1 for both
+ * the paperwork record and its related paperworksCategories records.
+ * 
+ * This controller extends that concept by implementing a cascade soft delete:
+ * 1. Sets isDeleted=1 for the category
+ * 2. Sets isDeleted=1 for related paperworksCategories records
+ * 3. Also soft-deletes any paperworks that no longer have active categories (orphaned)
+ */
+
 import { Hono } from "hono";
 import { categoriesTable, paperworksCategoriesTable, paperworksTable } from "../../db/schema";
 import { db } from "../../db";
@@ -65,7 +82,7 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
       .update(categoriesTable)
       .set({
         isDeleted: 1,
-        updatedAt: new Date().toISOString(),
+        updatedAt: sql`(CURRENT_TIMESTAMP)`,
         updatedBy: userInfo?.name,
       })
       .where(
@@ -97,7 +114,7 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
         .update(paperworksCategoriesTable)
         .set({
           isDeleted: 1,
-          updatedAt: new Date().toISOString(),
+          updatedAt: sql`(CURRENT_TIMESTAMP)`,
           updatedBy: userInfo?.name,
         })
         .where(
@@ -138,7 +155,7 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
           .update(paperworksTable)
           .set({
             isDeleted: 1,
-            updatedAt: new Date().toISOString(),
+            updatedAt: sql`(CURRENT_TIMESTAMP)`,
             updatedBy: userInfo?.name,
           })
           .where(
