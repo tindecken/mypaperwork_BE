@@ -26,8 +26,7 @@ import { isAuthenticated } from "../../libs/isAuthenticated";
 import { getUserInfo } from "../../libs/getUserInfo";
 
 const schema = T.Object({
-  id: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
-  userId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
+  categoryId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
 });
 
 export const deleteCategory = new Hono();
@@ -47,14 +46,6 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
     }
     
     const userInfo = getUserInfo(c);
-    if(userInfo?.id !== body.userId){
-      const response: GenericResponseInterface = {
-        success: false,
-        message: "Forbidden - Invalid User",
-        data: null,
-      };
-      return c.json(response, 403);
-    }
     
     // Check if category exists and belongs to the user
     const existingCategory = await db
@@ -62,8 +53,8 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
       .from(categoriesTable)
       .where(
         and(
-          eq(categoriesTable.id, body.id),
-          eq(categoriesTable.userId, body.userId),
+          eq(categoriesTable.id, body.categoryId),
+          eq(categoriesTable.userId, userInfo?.id!),
           eq(categoriesTable.isDeleted, 0)
         )
       );
@@ -87,8 +78,8 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
       })
       .where(
         and(
-          eq(categoriesTable.id, body.id),
-          eq(categoriesTable.userId, body.userId)
+          eq(categoriesTable.id, body.categoryId),
+          eq(categoriesTable.userId, userInfo?.id!)
         )
       )
       .returning();
@@ -99,7 +90,7 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
       .from(paperworksCategoriesTable)
       .where(
         and(
-          eq(paperworksCategoriesTable.categoryId, body.id),
+          eq(paperworksCategoriesTable.categoryId, body.categoryId),
           eq(paperworksCategoriesTable.isDeleted, 0)
         )
       );
@@ -119,7 +110,7 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
         })
         .where(
           and(
-            eq(paperworksCategoriesTable.categoryId, body.id),
+            eq(paperworksCategoriesTable.categoryId, body.categoryId),
             eq(paperworksCategoriesTable.isDeleted, 0)
           )
         )
@@ -138,7 +129,7 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
         .where(
           and(
             inArray(paperworksCategoriesTable.paperworkId, paperworkIds),
-            notInArray(paperworksCategoriesTable.categoryId, [body.id]),
+            notInArray(paperworksCategoriesTable.categoryId, [body.categoryId]),
             eq(paperworksCategoriesTable.isDeleted, 0)
           )
         );

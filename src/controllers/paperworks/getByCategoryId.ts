@@ -13,7 +13,7 @@ import { Hono } from "hono";
 import { getUserInfo } from "../../libs/getUserInfo";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
-import { IGetPaperworksResponse } from "../../models/IGetPaperworksResponse";
+import { IGetAllPaperworkResponse } from "../../models/IGetAllPaperworkResponse";
 
 const client = new S3Client({
   accessKeyId: process.env["MINIO_ACCESSKEYID"],
@@ -80,7 +80,7 @@ getByCategoryId.get(
         };
         return c.json(response, 404);
       }
-      const paperworkMap = new Map<string, IGetPaperworksResponse>();
+      const paperworkMap = new Map<string, IGetAllPaperworkResponse>();
       // Since we're only dealing with one category, we don't need Promise.all
       const cat = category[0];
       const paperworks = await db
@@ -120,11 +120,39 @@ getByCategoryId.get(
             p.name.toLowerCase().includes(filterValue.toLowerCase()) ||
             (p.note &&
               p.note.toLowerCase().includes(filterValue.toLowerCase())) ||
-            (p.customFields &&
-              p.customFields
-                .toString()
-                .toLowerCase()
-                .includes(filterValue.toLowerCase())) ||
+            (p.customFields && (() => {
+              try {
+                console.log('Filtering customFields for paperwork:', p.name);
+                console.log('customFields raw data:', p.customFields);
+                let customFieldsArray;
+                // Handle case where customFields might already be an object
+                if (typeof p.customFields === 'object' && p.customFields !== null) {
+                  customFieldsArray = p.customFields;
+                } else {
+                  customFieldsArray = JSON.parse(p.customFields as string);
+                }
+                console.log('Parsed customFields:', customFieldsArray);
+                
+                if (Array.isArray(customFieldsArray)) {
+                  const hasMatch = customFieldsArray.some(field => {
+                    const keyMatch = field.key && field.key.toString().toLowerCase().includes(filterValue.toLowerCase());
+                    const valueMatch = field.value && field.value.toString().toLowerCase().includes(filterValue.toLowerCase());
+                    console.log(`Field: ${JSON.stringify(field)}, keyMatch: ${keyMatch}, valueMatch: ${valueMatch}`);
+                    return keyMatch || valueMatch;
+                  });
+                  console.log('Custom fields match found:', hasMatch);
+                  return hasMatch;
+                }
+                console.log('CustomFields is not an array');
+                return false;
+              } catch (e) {
+                console.error('Error parsing customFields:', e);
+                // If JSON parsing fails, fall back to basic string search
+                const fallbackMatch = p.customFields.toString().toLowerCase().includes(filterValue.toLowerCase());
+                console.log('Fallback string search match:', fallbackMatch);
+                return fallbackMatch;
+              }
+            })()) ||
             (p.issuedAt &&
               p.issuedAt
                 .toString()
@@ -144,7 +172,7 @@ getByCategoryId.get(
       // sort
       if (sortField && sortDirection) {
         ppws.sort((a, b) => {
-          const sortFieldKey = sortField as keyof IGetPaperworksResponse;
+          const sortFieldKey = sortField as keyof IGetAllPaperworkResponse;
           if (sortDirection === "asc") {
             return a[sortFieldKey]! > b[sortFieldKey]! ? 1 : -1;
           } else {

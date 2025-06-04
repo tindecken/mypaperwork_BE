@@ -12,7 +12,7 @@ import { getUserInfo   } from "../../libs/getUserInfo";
 const schema = T.Object({
   name: T.String({ maxLength: 100 }),
   note: T.Optional(T.String({ maxLength: 2000 })),
-  icon: T.Optional(T.String({ maxLength: 100 })),
+  icon: T.Optional(T.Union([T.String({ maxLength: 100 }), T.Null()])),
   userId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
 });
 
@@ -70,9 +70,8 @@ createCategory.post("/create", tbValidator("json", schema), async (c) => {
       icon: body.icon?.trim() || null,
       userId: body.userId,
       isDeleted: 0,
-      createdAt: new Date().toISOString(),
-      createdBy: userInfo?.name,
-      updatedAt: sql`(CURRENT_TIMESTAMP)`,
+      createdAt: sql`(CURRENT_TIMESTAMP)`,
+      createdBy: userInfo?.name
     };
 
     const createdCategory = await db

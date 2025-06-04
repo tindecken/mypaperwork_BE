@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { categoriesTable } from "../../db/schema";
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
@@ -14,7 +14,8 @@ const schema = T.Object({
   categoryId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
   name: T.String({ maxLength: 100 }),
   note: T.Optional(T.String({ maxLength: 2000 })),
-  icon: T.Optional(T.String({ maxLength: 100 })),
+  icon: T.Optional(T.Union([T.String({ maxLength: 100 }), T.Null()])),
+  issueAt: T.Optional(T.Union([T.String(), T.Null()])),
   userId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
 });
 export const updateCategory = new Hono();
@@ -41,7 +42,7 @@ updateCategory.put("/update", tbValidator("json", schema), async (c) => {
       return c.json(response, 403);
     }
     // check categoryId exist or not in table categories
-    const isCatExisted = await isCategoryExisted(body.categoryId);
+    const isCatExisted = await isCategoryExisted(body.categoryId, c);
     if (!isCatExisted) {
       const response: GenericResponseInterface = {
         success: false,
@@ -77,7 +78,7 @@ updateCategory.put("/update", tbValidator("json", schema), async (c) => {
         note: body.note?.trim() || null,
         icon: body.icon?.trim() || null,
         updatedBy: userInfo?.name,
-        updatedAt: new Date().toISOString(),
+        updatedAt: sql`(CURRENT_TIMESTAMP)`,
       })
       .where(eq(categoriesTable.id, body.categoryId));
 

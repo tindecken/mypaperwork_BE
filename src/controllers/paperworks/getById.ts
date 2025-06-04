@@ -8,7 +8,7 @@ import {
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { eq, and, ne } from "drizzle-orm";
-import type { IGetPaperworkResponse } from "../../models/IGetPaperworkResponse";
+import type { IGetPaperworkDetailsResponse } from "../../models/IGetPaperworkDetailsResponse";
 import { S3Client, type S3File } from "bun";
 import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64.js";
 import { Hono } from "hono";
@@ -148,7 +148,7 @@ getById.get("/get/:paperworkId", async (c) => {
   );
 
   // ... the rest of the component
-  const ppwDetails: IGetPaperworkResponse = {
+  const ppwDetails: IGetPaperworkDetailsResponse = {
     ...paperWork[0],
     categories: categories,
     attachments: documentAttachments,

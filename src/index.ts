@@ -10,6 +10,7 @@ import { getById } from './controllers/paperworks/getById';
 import { updatePaperWork } from './controllers/paperworks/update';
 import { deletePaperWork } from './controllers/paperworks/delete';
 import { getCategories } from './controllers/categories/get';
+import { getByUserId_old } from './controllers/paperworks/getByUserId_old';
 import { getByUserId } from './controllers/paperworks/getByUserId';
 import { getByCategoryId } from './controllers/paperworks/getByCategoryId';
 import { updateCategoriesByPaperworkId } from './controllers/paperworks/updateCategories';
@@ -57,7 +58,8 @@ app.route('/paperworks', createPaperWork)
 app.route('/paperworks', getById)
 app.route('/paperworks', updatePaperWork)
 app.route('/paperworks', deletePaperWork) //
-app.route('/paperworks', getByUserId) // get all paperworks by user id
+app.route('/paperworks', getByUserId) // get all paperworks by user id (new version, don't depend on categoy)
+app.route('/paperworks', getByUserId_old) // get all paperworks by user id (old version, depend on category)
 app.route('/paperworks', getByCategoryId) // get all paperworks by category id
 app.route('/paperworks', updateCategoriesByPaperworkId) // update categories for paperwork
 

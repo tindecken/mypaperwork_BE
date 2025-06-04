@@ -1,6 +1,6 @@
 import type { SelectCategory, SelectDocument, SelectPaperwork } from "../db/schema";
 
-export interface IGetPaperworkResponse extends SelectPaperwork {
+export interface IGetPaperworkDetailsResponse extends SelectPaperwork {
     categories: SelectCategory[]
     attachments?: SelectDocument[],
     images?: {

@@ -13,7 +13,7 @@ const schema = T.Object({
   paperworkId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
   name: T.String({ maxLength: 200 }),
   note: T.Optional(T.String({ maxLength: 2000 })),
-  issueAt: T.Optional(T.String()),
+  issueAt: T.Optional(T.Union([T.String(), T.Null()])),
   customFields: T.Optional(T.Union([T.String(), T.Null()])),
 });
 

@@ -19,9 +19,10 @@ import { S3Client, type S3File, redis } from "bun";
 import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64";
 import { getUserInfo } from "../../libs/getUserInfo";
 import { isAuthenticated } from "../../libs/isAuthenticated";
+import { isCategoryExisted } from "../../libs/isCategoryExisted";
 
 const schema = T.Object({
-  categoryId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
+  categoryId: T.Optional(T.Union([T.String(), T.Null()])),
   name: T.String({ maxLength: 200 }),
   note: T.Optional(T.String({ maxLength: 2000 })),
   issueAt: T.Optional(T.String()),
@@ -63,28 +64,20 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
   }
   const userInfo = getUserInfo(c);
   const files = body.getAll("files") as File[];
-
-  // Check if category already exists for this user
-  const existingCategory = await db
-    .select()
-    .from(categoriesTable)
-    .where(
-      and(
-        eq(categoriesTable.id, body.get("categoryId") as string),
-        eq(categoriesTable.userId, userInfo?.id!),
-        eq(categoriesTable.isDeleted, 0)
-      )
-    );
-
-  if (existingCategory.length === 0) {
-    const response: GenericResponseInterface = {
-      success: false,
-      message: "Category was not existed.",
-      data: null,
-    };
-    return c.json(response, 400);
+  const categoryId = body.get("categoryId") as string;
+  if (categoryId !== "" && categoryId !== null) {
+    console.log('cateogryId', categoryId)
+    const isCatExisted = await isCategoryExisted(categoryId, c);
+    if (!isCatExisted) {
+      const response: GenericResponseInterface = {
+        success: false,
+        message: "Category was not existed.",
+        data: null,
+      };
+      return c.json(response, 400);
+    }
   }
-
+  
   if (files && files.length > 20) {
     return c.json(
       {
@@ -129,11 +122,11 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     .returning();
 
   // Insert selected category relationship if provided
-  if (body.get("categoryId") !== "") {
+  if (categoryId !== "" && categoryId !== null) {
     const pwc: typeof paperworksCategoriesTable.$inferInsert = {
       id: ulid(),
       paperworkId: insertedPaperWork[0].id,
-      categoryId: body.get("categoryId") as string,
+      categoryId: categoryId,
       createdBy: userInfo?.name,
     };
     await db.insert(paperworksCategoriesTable).values(pwc);
