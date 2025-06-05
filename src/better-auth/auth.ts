@@ -71,7 +71,7 @@ export const auth = betterAuth({
             prompt: "select_account",
             clientId: process.env["GOOGLE_CLIENT_ID"]!,
             clientSecret: process.env["GOOGLE_CLIENT_SECRET"]!,
-            callbackURL: "http://localhost:3001/api/auth/callback/google"
+            callbackURL: process.env["GOOGLE_CALLBACK_URL"]!
         }
     },
     hooks: {
