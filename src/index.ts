@@ -65,7 +65,7 @@ app.route('/paperworks', updateCategoriesByPaperworkId) // update categories for
 
 
 export default { 
-  port: 3001, 
+  port: process.env.PORT || 3001, 
   fetch: app.fetch, 
   idleTimeout: 60
 } 
