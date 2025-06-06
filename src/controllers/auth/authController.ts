@@ -6,7 +6,7 @@ const authController = new Hono<{ Bindings: AuthType }>({
   strict: false,
 })
 
-authController.on(['POST', 'GET'], '/auth/*', (c) => {
+authController.on(['POST', 'GET'], '/*', (c) => {
   return auth.handler(c.req.raw)
 })
 

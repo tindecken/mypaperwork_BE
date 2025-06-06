@@ -20,6 +20,7 @@ import authController from './controllers/auth/authController';
 const app = new Hono<{ Variables: AuthType }>({
 	strict: false
 }).basePath('/api');
+
 app.use("*", async (c, next) => {
 	const session = await auth.api.getSession({ headers: c.req.raw.headers });
   	if (!session) {
