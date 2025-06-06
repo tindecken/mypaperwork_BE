@@ -11,19 +11,19 @@
   "dependencies": {
     "@hono/bun-compress": "^0.1.0",
     "@hono/typebox-validator": "^0.3.3",
-    "@libsql/client": "^0.15.7",
+    "@libsql/client": "^0.15.8",
     "better-auth": "^1.2.8",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
-    "hono": "^4.7.10",
+    "hono": "^4.7.11",
     "sharp": "^0.34.2",
     "ulid": "^3.0.0"
   },
   "devDependencies": {
-    "@hono/node-server": "^1.0.0",
-    "bun-types": "^1.2.14",
+    "@hono/node-server": "^1.14.3",
+    "bun-types": "^1.2.15",
     "drizzle-kit": "^0.31.1",
     "tsx": "^4.19.4",
-    "wrangler": "^4.4.0"
+    "wrangler": "^4.19.1"
   }
 }
