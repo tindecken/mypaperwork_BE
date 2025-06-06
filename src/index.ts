@@ -14,13 +14,12 @@ import { getByUserId_old } from './controllers/paperworks/getByUserId_old';
 import { getByUserId } from './controllers/paperworks/getByUserId';
 import { getByCategoryId } from './controllers/paperworks/getByCategoryId';
 import { updateCategoriesByPaperworkId } from './controllers/paperworks/updateCategories';
+import { AuthType } from './better-auth/auth';
+import authController from './controllers/auth/authController';
 
-const app = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>().basePath('/api');
+const app = new Hono<{ Variables: AuthType }>({
+	strict: false
+}).basePath('/api');
 app.use("*", async (c, next) => {
 	const session = await auth.api.getSession({ headers: c.req.raw.headers });
   	if (!session) {
@@ -40,12 +39,12 @@ app.use('*', cors({
 	exposeHeaders: ['Content-Length', 'X-Kuma-Revision']
 }))
 app.use(compress({ encoding: "gzip"}))
-app.on(["POST", "GET"], "/auth/*", (c) => {
-	return auth.handler(c.req.raw);
-});
 app.notFound((c) => {
   return c.text('404 Route not found !', 404)
 })
+
+// auth
+app.route('/auth', authController)
 
 // categories
 app.route('/categories', createCategory)

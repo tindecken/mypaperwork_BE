@@ -20,7 +20,7 @@ export const auth = betterAuth({
 		},
     },
     trustedOrigins: [
-        "https://paperwork",
+        "https://paperwork.tindecken.xyz",
         "http://localhost:1000"],
     emailAndPassword: {
         enabled: true,
@@ -85,3 +85,8 @@ export const auth = betterAuth({
         }),
     },
 });
+
+export type AuthType = {
+    user: typeof auth.$Infer.Session.user | null
+    session: typeof auth.$Infer.Session.session | null
+}
