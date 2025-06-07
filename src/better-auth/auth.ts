@@ -21,7 +21,7 @@ export const auth = betterAuth({
     },
     trustedOrigins: [
         "https://paperwork.tindecken.xyz",
-        "http://localhost:1000"],
+        "http://localhost:1000","http://192.168.1.17:3003"],
     emailAndPassword: {
         enabled: true,
     },
