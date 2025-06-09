@@ -25,7 +25,6 @@ export const getById = new Hono();
 
 getById.get("/get/:paperworkId", async (c) => {
   const paperworkId = c.req.param("paperworkId");
-  console.log('paperworkId', paperworkId)
   // Check if user is authenticated
   if (!isAuthenticated(c)) {
     const response: GenericResponseInterface = {
@@ -58,7 +57,6 @@ getById.get("/get/:paperworkId", async (c) => {
         eq(paperworksCategoriesTable.isDeleted, 0)
       )
     );
-  console.log('paperworkCategories', paperworkCategories)
   const categories: SelectCategory[] = [];
   await Promise.all(
     paperworkCategories.map(async (pwCat) => {

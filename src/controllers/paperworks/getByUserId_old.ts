@@ -34,7 +34,6 @@ const querySchema = T.Object({
 export const getByUserId_old = new Hono();
 
 getByUserId_old.get("/getAll_old", tbValidator("query", querySchema), async (c) => {
-  console.log("query", c.req.query());
   try {
     const { pageNumber, pageSize, filterValue, sortField, sortDirection } =
       c.req.query();
