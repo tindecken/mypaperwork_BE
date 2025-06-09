@@ -16,6 +16,9 @@ import { getByCategoryId } from './controllers/paperworks/getByCategoryId';
 import { updateCategoriesByPaperworkId } from './controllers/paperworks/updateCategories';
 import { AuthType } from './better-auth/auth';
 import authController from './controllers/auth/authController';
+import { downloadDocument } from './controllers/documents/download';
+import { uploadDocument } from './controllers/documents/upload';
+import { removeDocument } from './controllers/documents/remove';
 
 const app = new Hono<{ Variables: AuthType }>({
 	strict: false
@@ -69,6 +72,10 @@ app.route('/paperworks', getByUserId_old) // get all paperworks by user id (old 
 app.route('/paperworks', getByCategoryId) // get all paperworks by category id
 app.route('/paperworks', updateCategoriesByPaperworkId) // update categories for paperwork
 
+// documents
+app.route('/documents', downloadDocument)
+app.route('/documents', uploadDocument)
+app.route('/documents', removeDocument)
 
 export default { 
   port: process.env.PORT || 3001, 

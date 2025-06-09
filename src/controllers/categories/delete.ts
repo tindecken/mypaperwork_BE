@@ -68,11 +68,12 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
       return c.json(response, 404);
     }
 
-    // 1. Soft delete the category by setting isDeleted = 1
+    // 1. Soft delete the category by setting isDeleted = 1 and rename category to oldname_deleted_{ulid}
     const updatedCategory = await db
       .update(categoriesTable)
       .set({
         isDeleted: 1,
+        name: `${existingCategory[0].name}_deleted_${existingCategory[0].id}`,
         updatedAt: sql`(CURRENT_TIMESTAMP)`,
         updatedBy: userInfo?.name,
       })

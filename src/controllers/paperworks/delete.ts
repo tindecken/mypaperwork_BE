@@ -65,7 +65,7 @@ deletePaperWork.delete("/:paperworkId", tbValidator("param", paramSchema), async
       .set({
         isDeleted: 1,
         updatedAt: sql`(CURRENT_TIMESTAMP)`,
-        updatedBy: userInfo.id
+        updatedBy: userInfo.name
       })
       .where(
         and(
@@ -80,7 +80,7 @@ deletePaperWork.delete("/:paperworkId", tbValidator("param", paramSchema), async
       .set({
         isDeleted: 1,
         updatedAt: sql`(CURRENT_TIMESTAMP)`,
-        updatedBy: userInfo.id
+        updatedBy: userInfo.name
       })
       .where(eq(paperworksCategoriesTable.paperworkId, paperworkId));
 
