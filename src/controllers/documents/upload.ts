@@ -39,7 +39,6 @@ uploadDocument.post("/upload", tbValidator("form", schema), async (c) => {
     }
     const userInfo = getUserInfo(c);
     const files = body.getAll("file") as File[];
-    console.log('file', files)
     if (!files || files.length === 0) {
       return c.json(
         {

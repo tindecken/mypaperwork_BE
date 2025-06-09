@@ -16,35 +16,26 @@ export async function seed() {
     // Hash the password
     const ctx = await auth.$context;
     const hashedPassword = await ctx.password.hash("1Rivaldo@");
-    console.log('hashedPassword:', hashedPassword)
 
-    console.log("Starting database seeding...");
 
     // Truncate tables in reverse order to respect foreign key constraints
-    console.log("Truncating existing data...");
     // First delete from documents (child table)
     await db.delete(documentsTable);
-    console.log("Truncated documents table.");
 
     // First delete from paperworksCategories (child table)
     await db.delete(paperworksCategoriesTable);
-    console.log("Truncated paperworksCategories table.");
     
     // Delete from accounts table
     await db.delete(accountsTable);
-    console.log("Truncated accounts table.");
     
     // Then delete from paperworks
     await db.delete(paperworksTable);
-    console.log("Truncated paperworks table.");
     
     // Then delete from categories
     await db.delete(categoriesTable);
-    console.log("Truncated categories table.");
     
     // Finally delete from users (parent table)
     await db.delete(usersTable);
-    console.log("Truncated users table.");
 
     // Insert users
     await db.insert(usersTable).values({
@@ -68,7 +59,6 @@ export async function seed() {
       updatedAt: sql`(CURRENT_TIMESTAMP)`,
       isDeleted: 0
     });
-    console.log("Users inserted.");
     
     // Insert accounts with passwords for both users
     await db.insert(accountsTable).values({
@@ -90,7 +80,6 @@ export async function seed() {
       createdAt: sql`(CURRENT_TIMESTAMP)`,
       updatedAt: sql`(CURRENT_TIMESTAMP)`
     });
-    console.log("User accounts with passwords inserted.");
 
     // Insert categories for user 1
     await db.insert(categoriesTable).values({
@@ -122,7 +111,6 @@ export async function seed() {
       createdBy: "system",
       isDeleted: 0
     });
-    console.log("Categories for User 1 inserted.");
 
     // Insert categories for user 2
     await db.insert(categoriesTable).values({
@@ -154,7 +142,6 @@ export async function seed() {
       createdBy: "system",
       isDeleted: 0
     });
-    console.log("Categories for User 2 inserted.");
 
     // Insert paperworks for user 1
     await db.insert(paperworksTable).values({
@@ -178,7 +165,6 @@ export async function seed() {
       createdBy: "system",
       isDeleted: 0
     });
-    console.log("Paperworks for User 1 inserted.");
 
     // Insert paperworks for user 2
     await db.insert(paperworksTable).values({
@@ -202,7 +188,6 @@ export async function seed() {
       createdBy: "system",
       isDeleted: 0
     });
-    console.log("Paperworks for User 2 inserted.");
 
     // Insert paperworksCategories for user 1
     await db.insert(paperworksCategoriesTable).values({
@@ -224,7 +209,6 @@ export async function seed() {
       createdBy: "system",
       isDeleted: 0
     });
-    console.log("PaperworksCategories for User 1 inserted.");
 
     // Insert paperworksCategories for user 2
     await db.insert(paperworksCategoriesTable).values({
@@ -246,10 +230,6 @@ export async function seed() {
       createdBy: "system",
       isDeleted: 0
     });
-    console.log("PaperworksCategories for User 2 inserted.");
-
-    console.log("Database seeding completed successfully.");
-    
     return { success: true, message: "Database seeded successfully." };
   } catch (error) {
     console.error("Error seeding database:", error);
@@ -260,7 +240,6 @@ export async function seed() {
 // Export a function to run the seed
 export async function runSeed() {
   const result = await seed();
-  console.log(result.message);
   return result;
 }
 

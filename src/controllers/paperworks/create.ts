@@ -66,7 +66,6 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
   const files = body.getAll("files") as File[];
   const categoryId = body.get("categoryId") as string;
   if (categoryId !== "" && categoryId !== null) {
-    console.log('cateogryId', categoryId)
     const isCatExisted = await isCategoryExisted(categoryId, c);
     if (!isCatExisted) {
       const response: GenericResponseInterface = {

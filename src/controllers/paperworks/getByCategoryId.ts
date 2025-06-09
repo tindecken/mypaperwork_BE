@@ -41,17 +41,10 @@ getByCategoryId.get(
   tbValidator("param", paramSchema),
   tbValidator("query", querySchema),
   async (c) => {
-    console.log("query", c.req.query());
     try {
       const { pageNumber, pageSize, filterValue, sortField, sortDirection } =
         c.req.query();
-      console.log("pageNumber", pageNumber);
-      console.log("pageSize", pageSize);
-      console.log("filterValue", filterValue);
-      console.log("sortField", sortField);
-      console.log("sortDirection", sortDirection);
       const categoryId = c.req.param("categoryId");
-      console.log("categoryId", categoryId);
       const userInfo = getUserInfo(c);
       if (!userInfo) {
         const response: GenericResponseInterface = {
@@ -122,8 +115,6 @@ getByCategoryId.get(
               p.note.toLowerCase().includes(filterValue.toLowerCase())) ||
             (p.customFields && (() => {
               try {
-                console.log('Filtering customFields for paperwork:', p.name);
-                console.log('customFields raw data:', p.customFields);
                 let customFieldsArray;
                 // Handle case where customFields might already be an object
                 if (typeof p.customFields === 'object' && p.customFields !== null) {
@@ -131,25 +122,19 @@ getByCategoryId.get(
                 } else {
                   customFieldsArray = JSON.parse(p.customFields as string);
                 }
-                console.log('Parsed customFields:', customFieldsArray);
                 
                 if (Array.isArray(customFieldsArray)) {
                   const hasMatch = customFieldsArray.some(field => {
                     const keyMatch = field.key && field.key.toString().toLowerCase().includes(filterValue.toLowerCase());
                     const valueMatch = field.value && field.value.toString().toLowerCase().includes(filterValue.toLowerCase());
-                    console.log(`Field: ${JSON.stringify(field)}, keyMatch: ${keyMatch}, valueMatch: ${valueMatch}`);
                     return keyMatch || valueMatch;
                   });
-                  console.log('Custom fields match found:', hasMatch);
                   return hasMatch;
                 }
-                console.log('CustomFields is not an array');
                 return false;
               } catch (e) {
-                console.error('Error parsing customFields:', e);
                 // If JSON parsing fails, fall back to basic string search
                 const fallbackMatch = p.customFields.toString().toLowerCase().includes(filterValue.toLowerCase());
-                console.log('Fallback string search match:', fallbackMatch);
                 return fallbackMatch;
               }
             })()) ||
