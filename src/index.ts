@@ -19,6 +19,7 @@ import authController from './controllers/auth/authController';
 import { downloadDocument } from './controllers/documents/download';
 import { uploadDocument } from './controllers/documents/upload';
 import { removeDocument } from './controllers/documents/remove';
+import { setCover } from './controllers/documents/setCover';
 
 const app = new Hono<{ Variables: AuthType }>({
 	strict: false
@@ -76,6 +77,7 @@ app.route('/paperworks', updateCategoriesByPaperworkId) // update categories for
 app.route('/documents', downloadDocument)
 app.route('/documents', uploadDocument)
 app.route('/documents', removeDocument)
+app.route('/documents', setCover)
 
 export default { 
   port: process.env.PORT || 3001, 
