@@ -60,11 +60,14 @@ uploadDocument.post("/upload", tbValidator("form", schema), async (c) => {
       );
     }
     for (const file of files) {
-      if (file.size > 1024 * 1024 * 20) {
+      const fileExtension = file.name.substring(file.name.lastIndexOf(".") + 1).toLowerCase();
+      const isImageFile = IMAGE_FILE_TYPE.includes(fileExtension);
+      const maxFileSize = isImageFile ? 10 : (process.env["MAX_FILE_SIZE_IN_MB"] ? parseInt(process.env["MAX_FILE_SIZE_IN_MB"]) : 2);
+      if (file.size > 1024 * 1024 * maxFileSize) {
         return c.json(
           {
             success: false,
-            message: `File ${file.name} with file size ${file.size} is greater than 4MB! Please upload a smaller file.`,
+            message: `File ${file.name} with file size ${file.size} is greater than ${maxFileSize}MB! Please upload a smaller file.`,
             data: null,
           },
           400

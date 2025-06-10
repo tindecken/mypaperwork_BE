@@ -89,11 +89,14 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
   }
   if (files) {
     for (const file of files) {
-      if (file.size > 1024 * 1024 * 20) {
+      const fileExtension = file.name.substring(file.name.lastIndexOf(".") + 1).toLowerCase();
+      const isImageFile = IMAGE_FILE_TYPE.includes(fileExtension);
+      const maxFileSize = isImageFile ? 10 : (process.env["MAX_FILE_SIZE_IN_MB"] ? parseInt(process.env["MAX_FILE_SIZE_IN_MB"]) : 2);
+      if (file.size > 1024 * 1024 * maxFileSize) {
         return c.json(
           {
             success: false,
-            message: `File ${file.name} with file size ${file.size} is greater than 4MB! Please upload a smaller file.`,
+            message: `File ${file.name} with file size ${file.size} is greater than ${maxFileSize}MB! Please upload a smaller file.`,
             data: null,
           },
           400
@@ -201,35 +204,43 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
         ]);
       });
   }
-  // Reduce size of all images
+  // Reduce size of image if it's greater than 1MB
   for (const image of documentImages) {
-    const s3File: S3File = client.file(image.filePath);
-    const buffer = await s3File.arrayBuffer();
-    await sharp(buffer)
-      .jpeg({ quality: 50 })
-      .toBuffer()
-      .then(async (arrayBuffer: Buffer) => {
-        // check if file is an image, then reduce size
-        const fileWithoutExtension = image.fileName.substring(
-          0,
-          image.fileName.lastIndexOf(".")
-        );
-        const fileExtension = image.fileName.substring(
-          image.fileName.lastIndexOf(".") + 1
-        );
-        const reducedFileName = `${fileWithoutExtension}_reduced.${fileExtension}`;
-        const reducedFilePath = `${userInfo?.id}\\${ppwULID}\\${reducedFileName}`;
-        const s3File: S3File = client.file(reducedFilePath);
-        await s3File.write(arrayBuffer, { type: "image/jpeg" });
-        const reducedImageFileSize = arrayBuffer.byteLength;
-        await db
-          .update(documentsTable)
-          .set({
-            reducedImageSizeFilePath: reducedFilePath,
-            reducedImageFileSize: reducedImageFileSize,
-          })
-          .where(eq(documentsTable.id, image.id));
-      });
+    const origS3File: S3File = client.file(image.filePath);
+    const buffer = await origS3File.arrayBuffer();
+    
+    // Only reduce image size if it's greater than 1MB
+    const needsReduction = buffer.byteLength > 1024 * 1024;
+    const processedBuffer = needsReduction ? 
+      await sharp(buffer)
+        .jpeg({ quality: 50 })
+        .toBuffer() : 
+      Buffer.from(buffer);
+    
+    // Prepare file paths and names
+    const fileWithoutExtension = image.fileName.substring(
+      0,
+      image.fileName.lastIndexOf(".")
+    );
+    const fileExtension = image.fileName.substring(
+      image.fileName.lastIndexOf(".") + 1
+    );
+    const reducedFileName = `${fileWithoutExtension}_reduced.${fileExtension}`;
+    const reducedFilePath = `${userInfo?.id}\\${ppwULID}\\${reducedFileName}`;
+    
+    // Save the file (original or reduced)
+    const reducedS3File: S3File = client.file(reducedFilePath);
+    await reducedS3File.write(processedBuffer, { type: "image/jpeg" });
+    const reducedImageFileSize = processedBuffer.byteLength;
+    
+    // Update the database with the reduced file info
+    await db
+      .update(documentsTable)
+      .set({
+        reducedImageSizeFilePath: reducedFilePath,
+        reducedImageFileSize: reducedImageFileSize,
+      })
+      .where(eq(documentsTable.id, image.id));
   }
   const res: GenericResponseInterface = {
     success: true,
