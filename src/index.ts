@@ -42,13 +42,6 @@ app.use("*", async (c, next) => {
 	credentials: true,
 	exposeHeaders: ['Content-Length', 'X-Kuma-Revision']
 }));
-// app.use('*', cors({
-// 	origin: ['http://tindecken.xyz', 'https://tindecken.xyz', 'http://localhost', 'http://localhost:1000', 'http://localhost:3001', 'https://paperwork.tindecken.xyz', 'https://paperworkapi.tindecken.xyz'],
-// 	allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-// 	allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
-// 	credentials: true,
-// 	exposeHeaders: ['Content-Length', 'X-Kuma-Revision']
-// }))
 app.use(compress({ encoding: "gzip"}))
 app.notFound((c) => {
   return c.text('404 Route not found !', 404)
