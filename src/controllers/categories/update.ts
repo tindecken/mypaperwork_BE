@@ -3,7 +3,6 @@ import { categoriesTable } from "../../db/schema";
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { eq, and, ne, sql } from "drizzle-orm";
-import { ulid } from "ulid";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
 import { isAuthenticated } from "../../libs/isAuthenticated";

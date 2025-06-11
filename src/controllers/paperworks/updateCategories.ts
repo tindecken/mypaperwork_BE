@@ -6,10 +6,9 @@ import {
   InsertPaperworksCategories,
   paperworksCategoriesTable,
   paperworksTable,
-  type InsertPaperwork,
 } from "../../db/schema";
 import { db } from "../../db";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { getUserInfo } from "../../libs/getUserInfo";
 import { isAuthenticated } from "../../libs/isAuthenticated";
@@ -57,7 +56,7 @@ updateCategoriesByPaperworkId.put(
       .where(eq(paperworksCategoriesTable.paperworkId, body.paperworkId));
     // re-add the paperwork categories
     await Promise.all(
-      body.categoryIds.map(async (categoryId: string) => {
+      categoryIds.map(async (categoryId: string) => {
         const paperworkCategory: InsertPaperworksCategories = {
           id: ulid(),
           paperworkId: body.paperworkId,

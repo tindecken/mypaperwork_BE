@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
 
-import { paperworksTable, type InsertPaperwork } from "../../db/schema";
+import { paperworksTable } from "../../db/schema";
 import { db } from "../../db";
 import { and, eq } from "drizzle-orm";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
@@ -46,12 +46,22 @@ updatePaperWork.put("/update", tbValidator("json", schema), async (c) => {
   const userInfo = getUserInfo(c);
   const paperworkId = body.paperworkId;
 
+  // Return error if user is not found
+  if (!userInfo) {
+    const response: GenericResponseInterface = {
+      success: false,
+      message: "User not found",
+      data: null,
+    };
+    return c.json(response, 404);
+  }
+
   // Check if paperwork exists
   const existingPaperwork = await db
     .select()
     .from(paperworksTable)
     .where(
-      and(eq(paperworksTable.id, paperworkId), eq(paperworksTable.isDeleted, 0), eq(paperworksTable.userId, userInfo?.id!))
+      and(eq(paperworksTable.id, paperworkId), eq(paperworksTable.isDeleted, 0), eq(paperworksTable.userId, userInfo.id))
     );
 
   if (existingPaperwork.length === 0) {

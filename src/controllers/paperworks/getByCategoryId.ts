@@ -132,7 +132,7 @@ getByCategoryId.get(
                   return hasMatch;
                 }
                 return false;
-              } catch (e) {
+              } catch {
                 // If JSON parsing fails, fall back to basic string search
                 const fallbackMatch = p.customFields.toString().toLowerCase().includes(filterValue.toLowerCase());
                 return fallbackMatch;

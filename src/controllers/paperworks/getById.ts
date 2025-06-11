@@ -7,7 +7,7 @@ import {
 } from "../../db/schema";
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import type { IGetPaperworkDetailsResponse } from "../../models/IGetPaperworkDetailsResponse";
 import { S3Client, type S3File } from "bun";
 import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64.js";
@@ -159,7 +159,7 @@ getById.get("/get/:paperworkId", async (c) => {
       data: ppwDetails,
     };
     return c.json(res, 200);
-  } catch (error) {
+  } catch {
     const response: GenericResponseInterface = {
       success: false,
       message: "Failed to get paperwork due to an internal error",

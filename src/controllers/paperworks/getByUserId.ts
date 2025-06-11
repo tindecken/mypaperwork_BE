@@ -7,7 +7,7 @@ import {
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { eq, and, count } from "drizzle-orm";
-import { S3Client, type S3File, redis } from "bun";
+import { S3Client, type S3File } from "bun";
 import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64.js";
 import { Hono } from "hono";
 import { getUserInfo } from "../../libs/getUserInfo";
@@ -143,9 +143,6 @@ getByUserId.get("/getAll", tbValidator("query", querySchema), async (c) => {
       })
     );
     
-    // Store the original count for total records
-    const totalCount = responseData.length;
-    
     // Filter by properties if filterValue is provided
     if (filterValue) {
       responseData = responseData.filter(
@@ -172,7 +169,7 @@ getByUserId.get("/getAll", tbValidator("query", querySchema), async (c) => {
                 return hasMatch;
               }
               return false;
-            } catch (e) {
+            } catch {
               // If JSON parsing fails, fall back to basic string search
               const fallbackMatch = p.customFields.toString().toLowerCase().includes(filterValue.toLowerCase());
               return fallbackMatch;

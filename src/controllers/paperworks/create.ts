@@ -5,12 +5,11 @@ import { tbValidator } from "@hono/typebox-validator";
 import {
   documentsTable,
   paperworksTable,
-  categoriesTable,
   type InsertPaperwork,
   paperworksCategoriesTable,
 } from "../../db/schema";
 import { db } from "../../db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { ulid } from "ulid";
 import sharp from "sharp";
@@ -109,7 +108,7 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
   // Insert paperwork
   const ppw: InsertPaperwork = {
     id: ppwULID,
-    userId: userInfo?.id!,
+    userId: userInfo!.id,
     name: body.get("name") as string,
     note: body.get("note") as string,
     issuedAt: body.get("issueAt") as string,

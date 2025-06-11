@@ -2,7 +2,7 @@
 import { Hono } from "hono";
 import { documentsTable, paperworksTable } from "../../db/schema";
 import { db } from "../../db";
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";

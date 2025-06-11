@@ -6,16 +6,9 @@ import { and, eq, sql } from "drizzle-orm";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
-import { S3Client, type S3File } from "bun";
 import { isAuthenticated } from "../../libs/isAuthenticated";
 import { getUserInfo } from "../../libs/getUserInfo";
 
-const client = new S3Client({
-  accessKeyId: process.env["MINIO_ACCESSKEYID"],
-  secretAccessKey: process.env["MINIO_SECRETACCESSKEY"],
-  bucket: process.env["MINIO_BUCKET"],
-  endpoint: process.env["MINIO_ENDPOINT"],
-});
 const schema = T.Object({
   documentId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
   paperworkId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),

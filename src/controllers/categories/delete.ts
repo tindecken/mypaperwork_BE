@@ -47,6 +47,16 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
     
     const userInfo = getUserInfo(c);
     
+    // Ensure user information is available
+    if (!userInfo || !userInfo.id) {
+      const response: GenericResponseInterface = {
+        success: false,
+        message: "Unauthorized - User information is missing",
+        data: null,
+      };
+      return c.json(response, 401);
+    }
+    
     // Check if category exists and belongs to the user
     const existingCategory = await db
       .select()
@@ -54,7 +64,7 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
       .where(
         and(
           eq(categoriesTable.id, body.categoryId),
-          eq(categoriesTable.userId, userInfo?.id!),
+          eq(categoriesTable.userId, userInfo.id),
           eq(categoriesTable.isDeleted, 0)
         )
       );
@@ -80,7 +90,7 @@ deleteCategory.delete("/delete", tbValidator("json", schema), async (c) => {
       .where(
         and(
           eq(categoriesTable.id, body.categoryId),
-          eq(categoriesTable.userId, userInfo?.id!)
+          eq(categoriesTable.userId, userInfo.id)
         )
       )
       .returning();
