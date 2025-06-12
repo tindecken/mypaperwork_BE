@@ -71,7 +71,6 @@ export const auth = betterAuth({
             prompt: "select_account",
             clientId: process.env["GOOGLE_CLIENT_ID"]!,
             clientSecret: process.env["GOOGLE_CLIENT_SECRET"]!,
-            // callbackURL: process.env["GOOGLE_CALLBACK_URL"]!,
         }
     },
     hooks: {
