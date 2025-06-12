@@ -21,7 +21,7 @@ export const auth = betterAuth({
     },
     trustedOrigins: [
         "https://paperwork.tindecken.xyz",
-        "http://localhost:1000"],
+        "http://localhost:1000", "https://paperworkapi.tindecken.xyz"],
     emailAndPassword: {
         enabled: true,
     },
@@ -71,7 +71,7 @@ export const auth = betterAuth({
             prompt: "select_account",
             clientId: process.env["GOOGLE_CLIENT_ID"]!,
             clientSecret: process.env["GOOGLE_CLIENT_SECRET"]!,
-            // callbackURL: process.env["GOOGLE_CALLBACK_URL"]!,
+            callbackURL: process.env["GOOGLE_CALLBACK_URL"]!,
         }
     },
     hooks: {
