@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
 import { db } from "../../drizzle/index"; // your drizzle instance
 import { ulid } from "ulid";
+import { createTransport } from "nodemailer";
  
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -24,6 +25,28 @@ export const auth = betterAuth({
         "http://localhost:1000", "https://paperworkapi.tindecken.xyz"],
     emailAndPassword: {
         enabled: true,
+        minPasswordLength: 6,
+        maxPasswordLength: 100,
+        // Reset passwrord via email: (doc) https://www.better-auth.com/docs/authentication/email-password#request-password-reset
+        sendResetPassword: async ({user, url, token}, request) => { 
+            console.log(user, url, token, request);
+            const transporter = createTransport({
+                host: "smtp.useplunk.com",
+                secure: true,
+			    port: 465,
+                auth: {
+                    user: "plunk",
+                    pass: process.env.PLUNK_SMTP_PASSWORD
+                }
+            });
+            const mailOptions = {
+                from: process.env.PLUNK_SEND_FROM,
+                to: user.email,
+                subject: "Reset Password",
+                text: `Click the link below to reset your password: ${url}`
+            };
+            await transporter.sendMail(mailOptions);
+        }
     },
     user: {
         modelName: "usersTable",

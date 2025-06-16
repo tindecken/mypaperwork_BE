@@ -20,6 +20,8 @@ import { downloadDocument } from './controllers/documents/download';
 import { uploadDocument } from './controllers/documents/upload';
 import { removeDocument } from './controllers/documents/remove';
 import { setCover } from './controllers/documents/setCover';
+import { checkexistingpassword } from './controllers/users/checkexistingpassword';
+import { setPassword } from './controllers/users/setpassword';
 
 const app = new Hono<{ Variables: AuthType }>({
 	strict: false
@@ -71,6 +73,10 @@ app.route('/documents', downloadDocument)
 app.route('/documents', uploadDocument)
 app.route('/documents', removeDocument)
 app.route('/documents', setCover)
+
+// users
+app.route('/users', checkexistingpassword)
+app.route('/users', setPassword)
 
 export default { 
   port: process.env.PORT || 3001, 
