@@ -22,7 +22,7 @@ export const auth = betterAuth({
     },
     trustedOrigins: [
         "https://paperwork.tindecken.xyz",
-        "http://localhost:1000", "https://paperworkapi.tindecken.xyz"],
+        "http://localhost:1000"],
     emailAndPassword: {
         enabled: true,
         minPasswordLength: 6,
