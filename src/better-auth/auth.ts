@@ -29,7 +29,7 @@ export const auth = betterAuth({
         maxPasswordLength: 100,
         // Reset passwrord via email: (doc) https://www.better-auth.com/docs/authentication/email-password#request-password-reset
         sendResetPassword: async ({user, url, token}, request) => { 
-            url = process.env.RESET_PASSWORD_URL + token;
+            url = process.env.RESET_PASSWORD_URL + "/#/reset-password?token=" +token;
             const transporter = createTransport({
                 host: "smtp.useplunk.com",
                 secure: true,
