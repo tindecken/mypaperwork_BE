@@ -4,6 +4,8 @@ import { createAuthMiddleware } from "better-auth/api";
 import { db } from "../../drizzle/index"; // your drizzle instance
 import { ulid } from "ulid";
 import { createTransport } from "nodemailer";
+import { eq, sql } from "drizzle-orm";
+import { themesTable, usersThemesTable } from "../db/schema";
  
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -49,6 +51,9 @@ export const auth = betterAuth({
         }
     },
     user: {
+        deleteUser: {
+            enabled: true,
+        },
         modelName: "usersTable",
         fields: {
             emailVerified: "isEmailVerified",
@@ -98,13 +103,39 @@ export const auth = betterAuth({
     },
     hooks: {
         after: createAuthMiddleware(async (ctx) => {
+            console.log('ctx.path', ctx.path)
             if(ctx.path.startsWith("/sign-up")){
                 const newSession = ctx.context.newSession;
                 if(newSession){
                     console.log('new session', newSession)
+                    const userId = newSession.user.id   
+                    const defaultTheme = await db.select().from(themesTable).where(eq(themesTable.name, process.env.DEFAULT_THEME!));
+                    let defaultThemeId = "";
+                    if(defaultTheme.length === 0){
+                        defaultThemeId = ulid();
+                        await db.insert(themesTable).values({
+                            id: defaultThemeId,
+                            name: process.env.DEFAULT_THEME!,
+                            createdAt: sql`(CURRENT_TIMESTAMP)`,
+                            createdBy: "system",
+                        });
+                    } else {
+                        defaultThemeId = defaultTheme[0].id;
+                    }
+                    const userTheme = await db.select().from(usersThemesTable).where(eq(usersThemesTable.userId, userId));
+                    if(userTheme.length === 0){
+                        await db.insert(usersThemesTable).values({
+                            id: ulid(),
+                            userId: userId,
+                            themeId: defaultThemeId,
+                            createdAt: sql`(CURRENT_TIMESTAMP)`,
+                            createdBy: "system",
+                        });
+                    }
                 }
             }
         }),
+
     },
 });
 

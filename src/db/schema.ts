@@ -212,8 +212,7 @@ export const settingsTable = sqliteTable("settings", {
 
 export const themesTable = sqliteTable("themes", {
   id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  value: text("value").notNull(),
+  name: text("name").unique().notNull(),
   description: text("description"),
   createdAt: text('createdAt')
   .default(sql`(CURRENT_TIMESTAMP)`)
