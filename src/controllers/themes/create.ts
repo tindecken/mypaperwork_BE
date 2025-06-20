@@ -1,15 +1,12 @@
 import { Hono } from "hono";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { tbValidator } from "@hono/typebox-validator";
-import { auth } from "../../better-auth/auth";
 import { Type as T } from "@sinclair/typebox";
-import { getUserInfo } from "../../libs/getUserInfo";
-import { APIError } from "better-auth/api";
 import { db } from "../../../drizzle";
-import { themesTable, usersThemesTable } from "../../db/schema";
-import { eq } from "drizzle-orm";
+import { themesTable } from "../../db/schema";
 import { ulid } from "ulid";
 import { sql } from "drizzle-orm";
+import { APIError } from "better-auth/api";
 
 const schema = T.Object({
   label: T.String(),
