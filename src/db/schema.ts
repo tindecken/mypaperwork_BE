@@ -212,7 +212,8 @@ export const settingsTable = sqliteTable("settings", {
 
 export const themesTable = sqliteTable("themes", {
   id: text("id").primaryKey(),
-  name: text("name").unique().notNull(),
+  name: text("name").notNull(),
+  mode: text("mode").notNull().$type<"light" | "dark">().default("light"),
   description: text("description"),
   createdAt: text('createdAt')
   .default(sql`(CURRENT_TIMESTAMP)`)
@@ -221,6 +222,10 @@ export const themesTable = sqliteTable("themes", {
   updatedAt: text('updatedAt').$onUpdate(() => sql`(CURRENT_TIMESTAMP)`),
   updatedBy: text("updatedBy"),
   isDeleted: integer("isDeleted").notNull().default(0),
+}, (table) => {
+  return {
+    nameMode: uniqueIndex("themes_name_mode_idx").on(table.name, table.mode),
+  }
 });
 
 export type InsertUser = typeof usersTable.$inferInsert;
