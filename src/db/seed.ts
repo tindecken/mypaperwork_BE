@@ -15,7 +15,7 @@ export async function seed() {
   try {
     // Hash the password
     const ctx = await auth.$context;
-    const hashedPassword = await ctx.password.hash("1Rivaldo@");
+    const hashedPassword = await ctx.password.hash("rivaldo");
 
 
     // Truncate tables in reverse order to respect foreign key constraints

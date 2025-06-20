@@ -28,6 +28,7 @@ import { getUserTheme } from './controllers/themes/getUserTheme';
 import { setPasswordForEmail } from './controllers/admin/setPasswordForEmail';
 import { createShareLink } from './controllers/paperworks/createShareLink';
 import { viewSharedPaperwork } from './controllers/paperworks/viewSharedPaperwork';
+import { createTheme } from './controllers/themes/create';
 
 const app = new Hono<{ Variables: AuthType }>({
 	strict: false
@@ -90,6 +91,7 @@ app.route('/users', setPassword)
 app.route('/themes', getThemes)
 app.route('/themes', setTheme)
 app.route('/themes', getUserTheme)
+app.route('/themes', createTheme)
 
 // admin
 app.route('/admin', setPasswordForEmail)

@@ -12,8 +12,8 @@ getThemes.get("/get", async (c) => {
     const themes = await db
       .select({
         id: themesTable.id,
-        name: themesTable.name,
-        description: themesTable.description,
+        label: themesTable.label,
+        value: themesTable.value,
         isDefault: themesTable.isDefault,
       })
       .from(themesTable)

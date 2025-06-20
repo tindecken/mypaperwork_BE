@@ -214,7 +214,7 @@ export const themesTable = sqliteTable("themes", {
   id: text("id").primaryKey(),
   label: text("label").notNull(),
   value: text("value").notNull(),
-  isDark: integer("isDark").notNull().$type<0 | 1>().default(0),
+  isDark: integer("isDark").notNull().default(0),
   isDefault: integer("isDefault").notNull().default(0),
   description: text("description"),
   createdAt: text('createdAt')

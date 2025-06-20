@@ -3,6 +3,7 @@
   "scripts": {
     "push": "bun drizzle-kit push",
     "seed": "bun run src/db/seed.ts",
+    "seed_theme": "bun run src/db/createThemes.ts",
     "dev": "wrangler dev",
     "dev2": "bun run --hot src/index.ts",
     "deploy": "wrangler deploy --minify",
