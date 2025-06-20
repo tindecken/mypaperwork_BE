@@ -22,6 +22,9 @@ import { removeDocument } from './controllers/documents/remove';
 import { setCover } from './controllers/documents/setCover';
 import { checkexistingpassword } from './controllers/users/checkexistingpassword';
 import { setPassword } from './controllers/users/setpassword';
+import { getThemes } from './controllers/themes/get';
+import { setTheme } from './controllers/themes/set';
+import { getUserTheme } from './controllers/themes/getUserTheme';
 
 const app = new Hono<{ Variables: AuthType }>({
 	strict: false
@@ -77,6 +80,11 @@ app.route('/documents', setCover)
 // users
 app.route('/users', checkexistingpassword)
 app.route('/users', setPassword)
+
+// themes
+app.route('/themes', getThemes)
+app.route('/themes', setTheme)
+app.route('/themes', getUserTheme)
 
 export default { 
   port: process.env.PORT || 3001, 

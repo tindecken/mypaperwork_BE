@@ -103,22 +103,14 @@ export const auth = betterAuth({
     },
     hooks: {
         after: createAuthMiddleware(async (ctx) => {
-            console.log('ctx.path', ctx.path)
             if(ctx.path.startsWith("/sign-up")){
                 const newSession = ctx.context.newSession;
                 if(newSession){
-                    console.log('new session', newSession)
                     const userId = newSession.user.id   
-                    const defaultTheme = await db.select().from(themesTable).where(eq(themesTable.name, process.env.DEFAULT_THEME!));
+                    const defaultTheme = await db.select().from(themesTable).where(eq(themesTable.isDefault, 1));
                     let defaultThemeId = "";
                     if(defaultTheme.length === 0){
-                        defaultThemeId = ulid();
-                        await db.insert(themesTable).values({
-                            id: defaultThemeId,
-                            name: process.env.DEFAULT_THEME!,
-                            createdAt: sql`(CURRENT_TIMESTAMP)`,
-                            createdBy: "system",
-                        });
+                        console.log('Default theme not found')
                     } else {
                         defaultThemeId = defaultTheme[0].id;
                     }

@@ -12,7 +12,6 @@ import { ulid } from "ulid";
 import { sql } from "drizzle-orm";
 
 const schema = T.Object({
-  userId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
   themeId: T.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }),
 });
 
@@ -21,11 +20,10 @@ export const setTheme = new Hono();
 setTheme.post("/set", tbValidator("json", schema), async (c) => {
   try {
     const body = c.req.valid("json");
-    const { userId, themeId } = body;
+    const { themeId } = body;
     
-    // Security check: Ensure the logged-in user is only modifying their own theme
     const loggedInUser = await getUserInfo(c);
-    if (!loggedInUser || loggedInUser.id !== userId) {
+    if (!loggedInUser) {
       const response: GenericResponseInterface = {
         success: false,
         message: "You are not authorized to set theme for another user",
@@ -33,29 +31,16 @@ setTheme.post("/set", tbValidator("json", schema), async (c) => {
       };
       return c.json(response, 403);
     }
-    
-    // Check if user already has a theme setting
-    const existingTheme = await db.select().from(usersThemesTable).where(eq(usersThemesTable.userId, userId));
-    
-    if (existingTheme.length > 0) {
-      // Update existing theme setting
-      await db.update(usersThemesTable)
-        .set({
-          themeId: themeId,
-          updatedAt: sql`(CURRENT_TIMESTAMP)`,
-          updatedBy: userId
-        })
-        .where(eq(usersThemesTable.userId, userId));
-    } else {
-      // Create new theme setting
-      await db.insert(usersThemesTable).values({
-        id: ulid(),
-        userId: userId,
-        themeId: themeId,
-        createdAt: sql`(CURRENT_TIMESTAMP)`,
-        createdBy: userId
-      });
-    }
+    // Delete existing theme setting
+    await db.delete(usersThemesTable).where(eq(usersThemesTable.userId, loggedInUser.id));
+    // Create new theme setting
+    await db.insert(usersThemesTable).values({
+      id: ulid(),
+      userId: loggedInUser.id,
+      themeId: themeId,
+      createdAt: sql`(CURRENT_TIMESTAMP)`,
+      createdBy: loggedInUser.name
+    });
     
     const response: GenericResponseInterface = {
       success: true,
