@@ -25,6 +25,7 @@ import { setPassword } from './controllers/users/setpassword';
 import { getThemes } from './controllers/themes/get';
 import { setTheme } from './controllers/themes/set';
 import { getUserTheme } from './controllers/themes/getUserTheme';
+import { setPasswordForEmail } from './controllers/admin/setPasswordForEmail';
 
 const app = new Hono<{ Variables: AuthType }>({
 	strict: false
@@ -85,6 +86,9 @@ app.route('/users', setPassword)
 app.route('/themes', getThemes)
 app.route('/themes', setTheme)
 app.route('/themes', getUserTheme)
+
+// admin
+app.route('/admin', setPasswordForEmail)
 
 export default { 
   port: process.env.PORT || 3001, 
