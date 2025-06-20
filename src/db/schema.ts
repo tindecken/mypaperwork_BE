@@ -212,8 +212,9 @@ export const settingsTable = sqliteTable("settings", {
 
 export const themesTable = sqliteTable("themes", {
   id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  mode: text("mode").notNull().$type<"light" | "dark">().default("light"),
+  label: text("label").notNull(),
+  value: text("value").notNull(),
+  isDark: integer("isDark").notNull().$type<0 | 1>().default(0),
   isDefault: integer("isDefault").notNull().default(0),
   description: text("description"),
   createdAt: text('createdAt')
@@ -225,7 +226,7 @@ export const themesTable = sqliteTable("themes", {
   isDeleted: integer("isDeleted").notNull().default(0),
 }, (table) => {
   return {
-    nameMode: uniqueIndex("themes_name_mode_idx").on(table.name, table.mode),
+    valueIsDark: uniqueIndex("themes_value_isDark_idx").on(table.value, table.isDark),
   }
 });
 

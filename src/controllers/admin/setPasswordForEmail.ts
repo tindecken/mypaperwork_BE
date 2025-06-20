@@ -26,6 +26,14 @@ setPasswordForEmail.post("/setPasswordForEmail", tbValidator("json", schema), as
     const hashedPassword = await ctx.password.hash(password);
     console.log('email', email);
     const user = await db.select().from(usersTable).where(eq(usersTable.email, email));
+    if (user.length === 0) {
+      const response: GenericResponseInterface = {
+        success: false,
+        message: "User not found",
+        data: null,
+      };
+      return c.json(response, 404);
+    }
     await db.update(accountsTable).set({
       password: hashedPassword,
     }).where(eq(accountsTable.userId, user[0].id));

@@ -5,7 +5,7 @@ import { db } from "../../db";
 import { paperworksTable, sharedPaperworksTable } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
-import { getUserInfo } from "../auth/getUserInfo";
+import { getUserInfo } from "../../libs/getUserInfo";
 import { ulid } from "ulid";
 import { addDays, format } from "date-fns";
 import type { IShareLinkResponse } from "../../models/IShareLinkResponse";
