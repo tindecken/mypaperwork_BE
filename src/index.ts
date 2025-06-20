@@ -26,6 +26,8 @@ import { getThemes } from './controllers/themes/get';
 import { setTheme } from './controllers/themes/set';
 import { getUserTheme } from './controllers/themes/getUserTheme';
 import { setPasswordForEmail } from './controllers/admin/setPasswordForEmail';
+import { createShareLink } from './controllers/paperworks/createShareLink';
+import { viewSharedPaperwork } from './controllers/paperworks/viewSharedPaperwork';
 
 const app = new Hono<{ Variables: AuthType }>({
 	strict: false
@@ -71,6 +73,8 @@ app.route('/paperworks', getByUserId) // get all paperworks by user id (new vers
 app.route('/paperworks', getByUserId_old) // get all paperworks by user id (old version, depend on category)
 app.route('/paperworks', getByCategoryId) // get all paperworks by category id
 app.route('/paperworks', updateCategoriesByPaperworkId) // update categories for paperwork
+app.route('/paperworks', createShareLink) // create share link for paperwork
+app.route('/paperworks', viewSharedPaperwork) // view shared paperwork without authentication
 
 // documents
 app.route('/documents', downloadDocument)

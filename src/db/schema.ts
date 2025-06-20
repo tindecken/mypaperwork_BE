@@ -253,4 +253,20 @@ export type SelectPaperworkWithCategory = SelectPaperwork & {
   documentCount: number | null;
 };
 export type SelectDocument = typeof documentsTable.$inferSelect;
+export const sharedPaperworksTable = sqliteTable("sharedPaperworks", {
+  id: text("id").primaryKey(),
+  paperworkId: text("paperworkId")
+    .notNull()
+    .references(() => paperworksTable.id, { onDelete: "cascade" }),
+  shareLink: text("shareLink").notNull().unique(),
+  expiresAt: text("expiresAt").notNull(),
+  createdAt: text('createdAt')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  createdBy: text("createdBy"),
+  isDeleted: integer("isDeleted").notNull().default(0),
+});
+
 export type InsertTheme = typeof themesTable.$inferInsert;
+export type InsertSharedPaperwork = typeof sharedPaperworksTable.$inferInsert;
+export type SelectSharedPaperwork = typeof sharedPaperworksTable.$inferSelect;
