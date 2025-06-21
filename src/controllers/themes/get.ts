@@ -15,6 +15,8 @@ getThemes.get("/get", async (c) => {
         label: themesTable.label,
         value: themesTable.value,
         isDefault: themesTable.isDefault,
+        isDark: themesTable.isDark,
+        description: themesTable.description,
       })
       .from(themesTable)
       .where(

@@ -6,7 +6,7 @@ import { Type as T } from "@sinclair/typebox";
 import { getUserInfo } from "../../libs/getUserInfo";
 import { APIError } from "better-auth/api";
 import { db } from "../../../drizzle";
-import { usersThemesTable } from "../../db/schema";
+import { themesTable, usersThemesTable } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { ulid } from "ulid";
 import { sql } from "drizzle-orm";
@@ -33,6 +33,16 @@ setTheme.post("/set", tbValidator("json", schema), async (c) => {
     }
     // Delete existing theme setting
     await db.delete(usersThemesTable).where(eq(usersThemesTable.userId, loggedInUser.id));
+    // Check if theme exists
+    const theme = await db.select().from(themesTable).where(eq(themesTable.id, themeId));
+    if (theme.length === 0) {
+      const response: GenericResponseInterface = {
+        success: false,
+        message: "Theme not found",
+        data: null,
+      };
+      return c.json(response, 404);
+    }
     // Create new theme setting
     await db.insert(usersThemesTable).values({
       id: ulid(),
@@ -45,7 +55,7 @@ setTheme.post("/set", tbValidator("json", schema), async (c) => {
     const response: GenericResponseInterface = {
       success: true,
       message: "Set theme successfully",
-      data: null,
+      data: theme[0],
     };
     return c.json(response, 201);
   } catch (error) {
