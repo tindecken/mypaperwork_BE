@@ -19,10 +19,12 @@ export const setTheme = new Hono();
 
 setTheme.post("/set", tbValidator("json", schema), async (c) => {
   try {
+    console.log('aaaaaaaaaaaaaaaaaa')
     const body = c.req.valid("json");
     const { themeId } = body;
     
     const loggedInUser = await getUserInfo(c);
+    console.log('loggedInUser', loggedInUser);
     if (!loggedInUser) {
       const response: GenericResponseInterface = {
         success: false,
