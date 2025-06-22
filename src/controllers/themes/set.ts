@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { tbValidator } from "@hono/typebox-validator";
-import { auth } from "../../better-auth/auth";
 import { Type as T } from "@sinclair/typebox";
 import { getUserInfo } from "../../libs/getUserInfo";
 import { APIError } from "better-auth/api";
@@ -19,12 +18,10 @@ export const setTheme = new Hono();
 
 setTheme.post("/set", tbValidator("json", schema), async (c) => {
   try {
-    console.log('aaaaaaaaaaaaaaaaaa')
     const body = c.req.valid("json");
     const { themeId } = body;
     
     const loggedInUser = await getUserInfo(c);
-    console.log('loggedInUser', loggedInUser);
     if (!loggedInUser) {
       const response: GenericResponseInterface = {
         success: false,

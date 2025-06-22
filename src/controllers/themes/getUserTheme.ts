@@ -10,8 +10,8 @@ export const getUserTheme = new Hono();
 
 getUserTheme.get("/getUserTheme", async (c) => {
   try {
-    const loggedInUser = await getUserInfo(c);
-    if (!loggedInUser) {
+    const userInfo = getUserInfo(c);
+    if (!userInfo) {
       const response: GenericResponseInterface = {
         success: false,
         message: "You are not authorized to get theme for another user",
@@ -22,7 +22,7 @@ getUserTheme.get("/getUserTheme", async (c) => {
     const userTheme = await db
       .select()
       .from(usersThemesTable)
-      .where(eq(usersThemesTable.userId, loggedInUser.id));
+      .where(eq(usersThemesTable.userId, userInfo.id));
     if (userTheme.length === 0) {
       const response: GenericResponseInterface = {
         success: false,

@@ -24,7 +24,6 @@ setPasswordForEmail.post("/setPasswordForEmail", tbValidator("json", schema), as
     const email = body.email;
     const password = body.password;
     const hashedPassword = await ctx.password.hash(password);
-    console.log('email', email);
     const user = await db.select().from(usersTable).where(eq(usersTable.email, email));
     if (user.length === 0) {
       const response: GenericResponseInterface = {
