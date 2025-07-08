@@ -192,11 +192,10 @@ uploadDocument.post("/upload", tbValidator("form", schema), async (c) => {
       data: null,
     };
     return c.json(response, 200);
-  } catch (error) {
-    console.error("Error adding documents:", error);
+  } catch (error: any) {
     const response: GenericResponseInterface = {
       success: false,
-      message: "Failed to add documents due to an internal error",
+      message: error ? `Failed to add documents due to an internal error: ${error}${error.code ? ` - ${error.code}` : ''}` : "Failed to add documents due to an internal error",
       data: null,
     };
     return c.json(response, 500);

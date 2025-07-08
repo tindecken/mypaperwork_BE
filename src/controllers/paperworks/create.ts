@@ -174,34 +174,36 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     return IMAGE_FILE_TYPE.includes(fileExtension.toLowerCase());
   });
   if (documentImages.length > 0) {
-    // Cover image: get file from S3 based on documentImages[0].filePath then create cover image
-    const s3File: S3File = client.file(documentImages[0].filePath);
-    const arrayBuffer = await s3File.arrayBuffer();
-    await sharp(arrayBuffer)
-      .resize(300, 300)
-      .jpeg({ mozjpeg: true, quality: 80 })
-      .toBuffer()
-      .then(async (buffer: Buffer) => {
-        const coverFileName = `${documentImages[0].fileName.substring(
-          0,
-          documentImages[0].fileName.lastIndexOf(".")
-        )}_cover.jpg`;
-        const coverFilePath = `${userInfo?.id}\\${ppwULID}\\${coverFileName}`;
-        const s3File: S3File = client.file(coverFilePath);
-        await s3File.write(buffer);
-        await db
-          .update(documentsTable)
-          .set({ isCover: 1, coverPath: coverFilePath })
-          .where(eq(documentsTable.id, documentImages[0].id));
-        // convert buffer to base64 then set redis key with document id and base64
-        const base64 = arrayBufferToBase64(buffer.buffer as ArrayBuffer);
-        await redis.hmset(`document:${documentImages[0].id}`, [
-          "coverBase64",
-          base64,
-          "fileName",
-          documentImages[0].fileName,
-        ]);
-      });
+    // Create cover images for all document images
+    for (const documentImage of documentImages) {
+      const s3File: S3File = client.file(documentImage.filePath);
+      const arrayBuffer = await s3File.arrayBuffer();
+      await sharp(arrayBuffer)
+        .resize(300, 300)
+        .jpeg({ mozjpeg: true, quality: 80 })
+        .toBuffer()
+        .then(async (buffer: Buffer) => {
+          const coverFileName = `${documentImage.fileName.substring(
+            0,
+            documentImage.fileName.lastIndexOf(".")
+          )}_cover.jpg`;
+          const coverFilePath = `${userInfo?.id}\\${ppwULID}\\${coverFileName}`;
+          const s3File: S3File = client.file(coverFilePath);
+          await s3File.write(buffer);
+          await db
+            .update(documentsTable)
+            .set({ isCover: 1, coverPath: coverFilePath })
+            .where(eq(documentsTable.id, documentImage.id));
+          // convert buffer to base64 then set redis key with document id and base64
+          const base64 = arrayBufferToBase64(buffer.buffer as ArrayBuffer);
+          await redis.hmset(`document:${documentImage.id}`, [
+            "coverBase64",
+            base64,
+            "fileName",
+            documentImage.fileName,
+          ]);
+        });
+    }
   }
   // Reduce size of image if it's greater than 1MB
   for (const image of documentImages) {
