@@ -3,8 +3,9 @@ import { themesTable, usersThemesTable } from "../../db/schema";
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import type { IGetThemeResponse } from "../../models/IGetThemeResponse";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getUserInfo } from "../../libs/getUserInfo";
+import { ulid } from "ulid";
 
 export const getUserTheme = new Hono();
 
@@ -24,23 +25,33 @@ getUserTheme.get("/getUserTheme", async (c) => {
       .from(usersThemesTable)
       .where(eq(usersThemesTable.userId, userInfo.id));
     if (userTheme.length === 0) {
-      const response: GenericResponseInterface = {
-        success: false,
-        message: "User theme not found",
-        data: null,
-      };
-      return c.json(response, 404);
-    }
-    const theme = await db
+      // set default theme
+      const defaultTheme = await db.select().from(themesTable).where(eq(themesTable.isDefault, 1));
+      let defaultThemeId = "";
+      if(defaultTheme.length === 0){
+          console.log('Default theme not found')
+      } else {
+          defaultThemeId = defaultTheme[0].id;
+      }
+      const createdUserThemeId = ulid();
+      const createdUserTheme = await db.insert(usersThemesTable).values({
+          id: createdUserThemeId,
+          userId: userInfo.id,
+          themeId: defaultThemeId,
+          createdAt: sql`(CURRENT_TIMESTAMP)`,
+          createdBy: "system",
+      });
+      const theme = await db
       .select()
       .from(themesTable)
-      .where(eq(themesTable.id, userTheme[0].themeId));
+      .where(eq(themesTable.id, createdUserThemeId));
     const response: GenericResponseInterface = {
       success: true,
       message: "Theme fetched successfully",
       data: theme[0] as IGetThemeResponse,
     };
     return c.json(response, 201);
+    }
   } catch (error) {
     console.error("Error fetching theme:", error);
 
