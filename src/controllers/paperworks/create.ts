@@ -214,7 +214,7 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     const needsReduction = buffer.byteLength > 1024 * 1024;
     const processedBuffer = needsReduction ? 
       await sharp(buffer)
-        .jpeg({ quality: 50 })
+        .jpeg({ quality: 30 })
         .toBuffer() : 
       Buffer.from(buffer);
     
