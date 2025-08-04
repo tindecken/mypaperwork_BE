@@ -149,7 +149,7 @@ uploadDocument.post("/upload", tbValidator("form", schema), async (c) => {
       const needsReduction = buffer.byteLength > 1024 * 1024;
       const processedBuffer = needsReduction ? 
         await sharp(buffer)
-          .jpeg({ quality: 50 })
+          .jpeg({ quality: process.env["IMAGE_QUALITY"] ? parseInt(process.env["IMAGE_QUALITY"]) : 30 })
           .toBuffer() : 
         Buffer.from(buffer);
       

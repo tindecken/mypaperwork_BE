@@ -3,7 +3,6 @@ import type { GenericResponseInterface } from "../../models/GenericResponseInter
 import { tbValidator } from "@hono/typebox-validator";
 import { auth } from "../../better-auth/auth";
 import { Type as T } from "@sinclair/typebox";
-import { getUserInfo } from "../../libs/getUserInfo";
 import { APIError } from "better-auth/api";
 import { db } from "../../db";
 import { accountsTable, usersTable } from "../../db/schema";
