@@ -155,11 +155,11 @@ export const uploadFilesS3 = async (
       data: null,
     };
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in uploadFilesS3:", error);
     return {
       success: false,
-      message: "An error occurred while uploading files.",
+      message: error ? `Failed to upload file to S3 to an internal error: ${error}${error.code ? ` - ${error.code}` : ''}` : "Failed to upload file to S3 to an internal error",
       data: null,
     };
   }
