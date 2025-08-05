@@ -1,18 +1,10 @@
 // remove documents from paper work
 import { Hono } from "hono";
-import { documentsTable, paperworksTable } from "../../db/schema";
-import { db } from "../../db";
-import { eq, sql } from "drizzle-orm";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
-import { redis, S3Client, type S3File } from "bun";
+import { S3Client, type S3File } from "bun";
 import { isAuthenticated } from "../../libs/isAuthenticated";
-import { ulid } from "ulid";
-import { IMAGE_FILE_TYPE } from "../../libs/constants/imageType";
-import { getUserInfo } from "../../libs/getUserInfo";
-import sharp from "sharp";
-import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64";
 import { uploadFilesS3 } from "../../libs/uploadFilesS3";
 
 const client = new S3Client({
@@ -38,7 +30,6 @@ uploadDocument.post("/upload", tbValidator("form", schema), async (c) => {
       };
       return c.json(response, 401);
     }
-    const userInfo = getUserInfo(c);
     const files = body.getAll("file") as File[];
     if (!files || files.length === 0) {
       return c.json(
