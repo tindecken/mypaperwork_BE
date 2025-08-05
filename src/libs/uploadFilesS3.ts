@@ -112,13 +112,6 @@ export const uploadFilesS3 = async (
       const fileExtension = doc.fileName.substring(doc.fileName.lastIndexOf(".") + 1);
       return IMAGE_FILE_TYPE.includes(fileExtension.toLowerCase());
     });
-    if (documents.length === 0) {
-      return {
-        success: false,
-        message: "No documents found for the paperwork.",
-        data: null,
-      };
-    }
     // Create cover images for all document images
     for (const documentImage of documentImages) {
       const s3File: S3File = client.file(documentImage.filePath);
