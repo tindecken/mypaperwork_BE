@@ -52,24 +52,14 @@ getById.get("/get/:paperworkId", async (c) => {
     const paperworkCategories = await db
       .select()
       .from(paperworksCategoriesTable)
-      .where(
-        and(
-          eq(paperworksCategoriesTable.paperworkId, paperworkId),
-          eq(paperworksCategoriesTable.isDeleted, 0)
-        )
-      );
+      .where(and(eq(paperworksCategoriesTable.paperworkId, paperworkId), eq(paperworksCategoriesTable.isDeleted, 0)));
     const categories: SelectCategory[] = [];
     await Promise.all(
       paperworkCategories.map(async (pwCat) => {
         const cat = await db
           .select()
           .from(categoriesTable)
-          .where(
-            and(
-              eq(categoriesTable.id, pwCat.categoryId),
-              eq(categoriesTable.isDeleted, 0)
-            )
-          );
+          .where(and(eq(categoriesTable.id, pwCat.categoryId), eq(categoriesTable.isDeleted, 0)));
         if (cat.length > 0) {
           categories.push({ ...cat[0] });
         }
@@ -79,12 +69,7 @@ getById.get("/get/:paperworkId", async (c) => {
     const ppwDocuments = await db
       .select()
       .from(documentsTable)
-      .where(
-        and(
-          eq(documentsTable.paperworkId, paperworkId),
-          eq(documentsTable.isDeleted, 0)
-        )
-      );
+      .where(and(eq(documentsTable.paperworkId, paperworkId), eq(documentsTable.isDeleted, 0)));
     const documentImages = ppwDocuments.filter(
       (doc) =>
         doc.fileName.toLowerCase().endsWith(".jpg") ||
@@ -103,9 +88,7 @@ getById.get("/get/:paperworkId", async (c) => {
       imageBase64?: string | null;
       isCover: boolean | null;
     }[] = [];
-    const documentAttachments = ppwDocuments.filter(
-      (doc) => !documentImages.includes(doc)
-    );
+    const documentAttachments = ppwDocuments.filter((doc) => !documentImages.includes(doc));
     await Promise.all(
       documentImages.map(async (docImage) => {
         const reducedImageDoc = await db
@@ -114,19 +97,17 @@ getById.get("/get/:paperworkId", async (c) => {
             reducedImageSizeFilePath: documentsTable.reducedImageSizeFilePath,
           })
           .from(documentsTable)
-          .where(
-            and(
-              eq(documentsTable.id, docImage.id),
-              eq(documentsTable.isDeleted, 0)
-            )
-          );
-        if (
-          reducedImageDoc.length > 0 &&
-          reducedImageDoc[0].reducedImageFileSize !== null
-        ) {
-          const reducedImageFile: S3File = client.file(
-            reducedImageDoc[0].reducedImageSizeFilePath!
-          );
+          .where(and(eq(documentsTable.id, docImage.id), eq(documentsTable.isDeleted, 0)));
+        if (reducedImageDoc.length > 0 && reducedImageDoc[0].reducedImageFileSize !== null) {
+          const reducedImageFile: S3File = client.file(reducedImageDoc[0].reducedImageSizeFilePath!);
+          if ((await reducedImageFile.exists()) === false) {
+            const response: GenericResponseInterface = {
+              success: false,
+              message: `Reduced image file not found for document ID ${docImage.id}`,
+              data: null,
+            };
+            return c.json(response, 404);
+          }
           const reduceImageBuffer = await reducedImageFile.arrayBuffer();
           const base64String = arrayBufferToBase64(reduceImageBuffer);
           documentImagesWithBlob.push({
@@ -135,12 +116,7 @@ getById.get("/get/:paperworkId", async (c) => {
             fileSize: reducedImageDoc[0].reducedImageFileSize!,
             filePath: reducedImageDoc[0].reducedImageSizeFilePath!,
             imageBase64: base64String,
-            isCover:
-              docImage.isCover === 1
-                ? true
-                : docImage.isCover === 0
-                ? false
-                : null,
+            isCover: docImage.isCover === 1 ? true : docImage.isCover === 0 ? false : null,
           });
         }
       })

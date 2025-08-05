@@ -2,12 +2,7 @@ import { Hono } from "hono";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
 
-import {
-  documentsTable,
-  paperworksTable,
-  type InsertPaperwork,
-  paperworksCategoriesTable,
-} from "../../db/schema";
+import { documentsTable, paperworksTable, type InsertPaperwork, paperworksCategoriesTable } from "../../db/schema";
 import { db } from "../../db";
 import { eq } from "drizzle-orm";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
@@ -15,6 +10,7 @@ import { ulid } from "ulid";
 import sharp from "sharp";
 import { IMAGE_FILE_TYPE } from "../../libs/constants/imageType";
 import { S3Client, type S3File, redis } from "bun";
+import { uploadFilesS3 } from "../../libs/uploadFilesS3";
 import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64";
 import { getUserInfo } from "../../libs/getUserInfo";
 import { isAuthenticated } from "../../libs/isAuthenticated";
@@ -89,9 +85,7 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
   }
   if (files) {
     for (const file of files) {
-      const fileExtension = file.name
-        .substring(file.name.lastIndexOf(".") + 1)
-        .toLowerCase();
+      const fileExtension = file.name.substring(file.name.lastIndexOf(".") + 1).toLowerCase();
       const isImageFile = IMAGE_FILE_TYPE.includes(fileExtension);
       const maxFileSize = isImageFile
         ? 10
@@ -119,15 +113,10 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     name: body.get("name") as string,
     note: body.get("note") as string,
     issuedAt: body.get("issueAt") as string,
-    customFields: body.get("customFields")
-      ? JSON.parse(body.get("customFields") as string)
-      : null,
+    customFields: body.get("customFields") ? JSON.parse(body.get("customFields") as string) : null,
     createdBy: userInfo?.name,
   };
-  const insertedPaperWork = await db
-    .insert(paperworksTable)
-    .values(ppw)
-    .returning();
+  const insertedPaperWork = await db.insert(paperworksTable).values(ppw).returning();
 
   // Insert selected category relationship if provided
   if (categoryId !== "" && categoryId !== null) {
@@ -140,126 +129,11 @@ createPaperWork.post("/create", tbValidator("form", schema), async (c) => {
     await db.insert(paperworksCategoriesTable).values(pwc);
   }
 
-  // Handle file uploads
+  // Handle file uploads using uploadFilesS3
   if (files) {
-    for (const file of files) {
-      const fileExtension = file.name
-        .substring(file.name.lastIndexOf(".") + 1)
-        .toLowerCase();
-      const isImageFile = IMAGE_FILE_TYPE.includes(fileExtension);
-      if (isImageFile) {
-        const imageArrayBuffer = await file.arrayBuffer();
-
-        // Only reduce image size if it's greater than 1MB
-        const needsReduction = imageArrayBuffer.byteLength > 1024 * 1024;
-        const processedBuffer = needsReduction
-          ? await sharp(imageArrayBuffer)
-              .jpeg({
-                quality: process.env["IMAGE_QUALITY"]
-                  ? parseInt(process.env["IMAGE_QUALITY"])
-                  : 30,
-              })
-              .toBuffer()
-          : Buffer.from(imageArrayBuffer);
-
-        // Prepare file paths and names
-        const fileWithoutExtension = file.name.substring(
-          0,
-          file.name.lastIndexOf(".")
-        );
-        const fileExtension = file.name.substring(
-          file.name.lastIndexOf(".") + 1
-        );
-        const reducedFileName = `${fileWithoutExtension}_reduced.${fileExtension}`;
-        const reducedFilePath = `${userInfo?.id}\\${ppwULID}\\${reducedFileName}`;
-
-        // Save the file (original or reduced)
-        const reducedS3File: S3File = client.file(reducedFilePath);
-        await reducedS3File.write(processedBuffer, { type: "image/jpeg" });
-        const reducedImageFileSize = processedBuffer.byteLength;
-
-        // insert into documents table
-        const document: typeof documentsTable.$inferInsert = {
-          id: ulid(),
-          paperworkId: insertedPaperWork[0].id,
-          fileName: reducedFileName,
-          fileSize: reducedImageFileSize,
-          filePath: reducedFilePath,
-          reducedImageSizeFilePath: reducedFilePath,
-          reducedImageFileSize: reducedImageFileSize,
-          isDeleted: 0,
-          createdBy: userInfo?.name,
-        };
-        await db.insert(documentsTable).values(document);
-      } else {
-        const fileArrayBuffer = await file.arrayBuffer();
-        if (fileArrayBuffer.byteLength === 0) {
-          const response: GenericResponseInterface = {
-            success: false,
-            message: `File ${file.name} is empty!`,
-            data: null,
-          };
-          return c.json(response, 400);
-        }
-
-        const filePath = `${userInfo?.id}\\${insertedPaperWork[0].id}\\${file.name}`;
-        const document: typeof documentsTable.$inferInsert = {
-          id: ulid(),
-          paperworkId: insertedPaperWork[0].id,
-          fileSize: file.size,
-          fileName: file.name,
-          filePath: filePath,
-          isDeleted: 0,
-          createdBy: userInfo?.name,
-        };
-        await db.insert(documentsTable).values(document);
-        const s3File: S3File = client.file(filePath);
-        await s3File.write(fileArrayBuffer);
-      }
-    }
-  }
-  // Set cover for the paperwork and reduce size of images
-  const documents = await db
-    .select()
-    .from(documentsTable)
-    .where(eq(documentsTable.paperworkId, ppwULID));
-  console.log('documents', documents);
-  const documentImages = documents.filter((doc) => {
-    const fileExtension = doc.fileName.substring(
-      doc.fileName.lastIndexOf(".") + 1
-    );
-    return IMAGE_FILE_TYPE.includes(fileExtension.toLowerCase());
-  });
-  if (documentImages.length > 0) {
-    // Create cover images for all document images
-    for (const documentImage of documentImages) {
-      const s3File: S3File = client.file(documentImage.filePath);
-      const arrayBuffer = await s3File.arrayBuffer();
-      await sharp(arrayBuffer)
-        .resize(300, 300)
-        .jpeg({ mozjpeg: true, quality: 80 })
-        .toBuffer()
-        .then(async (buffer: Buffer) => {
-          const coverFileName = `${documentImage.fileName.substring(
-            0,
-            documentImage.fileName.lastIndexOf(".")
-          )}_cover.jpg`;
-          const coverFilePath = `${userInfo?.id}\\${ppwULID}\\${coverFileName}`;
-          const s3File: S3File = client.file(coverFilePath);
-          await s3File.write(buffer);
-          await db
-            .update(documentsTable)
-            .set({ isCover: 1, coverPath: coverFilePath })
-            .where(eq(documentsTable.id, documentImage.id));
-          // convert buffer to base64 then set redis key with document id and base64
-          const base64 = arrayBufferToBase64(buffer.buffer as ArrayBuffer);
-          await redis.hmset(`document:${documentImage.id}`, [
-            "coverBase64",
-            base64,
-            "fileName",
-            documentImage.fileName,
-          ]);
-        });
+    const uploadResult = await uploadFilesS3(insertedPaperWork[0].id, files, c);
+    if (uploadResult && !uploadResult.success) {
+      return c.json(uploadResult, 400);
     }
   }
   const res: GenericResponseInterface = {

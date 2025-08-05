@@ -52,6 +52,14 @@ downloadDocument.post("/download", tbValidator("json", schema), async (c) => {
     }
     // download file from S3
     const file: S3File = await client.file(documents[0].filePath);
+    if (await file.exists() === false) {
+      const response: GenericResponseInterface = {
+        success: false,
+        message: "File does not existed in storage or has been deleted!",
+        data: null,
+      };
+      return c.json(response, 404);
+    }
     const buffer = await file.bytes();
     const res: GenericResponseInterface = {
       success: true,
