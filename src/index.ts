@@ -5,7 +5,7 @@ import { cors } from "hono/cors";
 import { createCategory } from './controllers/categories/create';
 import { updateCategory } from './controllers/categories/update';
 import { deleteCategory } from './controllers/categories/delete';
-import { createPaperWork } from './controllers/paperworks/create';
+import { createPaperWork } from './controllers/paperworks/createPaperwork';
 import { getById } from './controllers/paperworks/getById';
 import { updatePaperWork } from './controllers/paperworks/update';
 import { deletePaperWork } from './controllers/paperworks/delete';
