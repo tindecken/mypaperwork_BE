@@ -124,7 +124,7 @@ export const uploadFilesS3 = async (
           const coverFileName = `${documentImage.fileName.substring(
             0,
             documentImage.fileName.lastIndexOf(".")
-          )}_cover.jpg`;
+          )}_cover.jpeg`;
           const coverFilePath = `${userInfo?.id}\\${paperworkId}\\${coverFileName}`;
           const s3File: S3File = client.file(coverFilePath);
           await s3File.write(buffer);

@@ -98,22 +98,12 @@ getByUserId.get("/getAll", tbValidator("query", querySchema), async (c) => {
 
         if (documentsWithCover.length > 0 && documentsWithCover[0].coverPath) {
           try {
-            // Use client.file instead of client.getObject
             const coverFile: S3File = client.file(documentsWithCover[0].coverPath);
-            if (await coverFile.exists()) {
-              const arrayBuffer = await coverFile.arrayBuffer();
-              coverBase64 = arrayBufferToBase64(arrayBuffer);
-              coverFileName = documentsWithCover[0].coverPath.split("/").pop() || null;
-            } else {
-              const response: GenericResponseInterface = {
-                success: false,
-                message: `Cover file not found for paperwork ID ${paperworkId}`,
-                data: null,
-              };
-              return c.json(response, 404);
-            }
-          } catch (error) {
-            console.error(`Error getting cover for paperwork ${paperworkId}:`, error);
+            const arrayBuffer = await coverFile.arrayBuffer();
+            coverBase64 = arrayBufferToBase64(arrayBuffer);
+            coverFileName = documentsWithCover[0].coverPath.split("/").pop() || null;
+          } catch (error: any) {
+            console.error(`Error fetching cover file for paperwork ID ${paperworkId}:`, error);
           }
         }
 
@@ -202,11 +192,12 @@ getByUserId.get("/getAll", tbValidator("query", querySchema), async (c) => {
       totalRecords: filteredCount,
     };
     return c.json(res, 200);
-  } catch (error) {
-    console.error("Error getting paperworks:", error);
+  } catch (error: any) {
     const response: GenericResponseInterface = {
       success: false,
-      message: "Failed to get paperworks due to an internal error",
+      message: error
+        ? `Failed to get paperworks due to an internal error: ${error}${error.code ? ` - ${error.code}` : ""}`
+        : "Failed to get paperworks due to an internal error",
       data: null,
     };
 

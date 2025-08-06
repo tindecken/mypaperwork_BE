@@ -146,15 +146,12 @@ getById.get("/get/:paperworkId", async (c) => {
       data: ppwDetails
     }, 200);
 
-  } catch (error) {
-    const message = error instanceof Error 
-      ? `Failed to get paperwork details: ${error.message}`
-      : "Failed to get paperwork details due to an internal error";
-
-    return c.json({
+  } catch (error: any) {
+    const response: GenericResponseInterface = {
       success: false,
-      message,
-      data: null
-    }, 500);
+      message: error ? `Failed to get paperwork details due to an internal error: ${error}${error.code ? ` - ${error.code}` : ''}` : "Failed to get paperwork details due to an internal error",
+      data: null,
+    };
+    return c.json(response, 500);
   }
 });
