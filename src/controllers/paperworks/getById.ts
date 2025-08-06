@@ -135,10 +135,10 @@ getById.get("/get/:paperworkId", async (c) => {
       data: ppwDetails,
     };
     return c.json(res, 200);
-  } catch {
+  } catch (error: any) {
     const response: GenericResponseInterface = {
       success: false,
-      message: "Failed to get paperwork due to an internal error",
+      message: error ? `Failed to get paperwork details due to an internal error: ${error}${error.code ? ` - ${error.code}` : ''}` : "Failed to get paperwork details due to an internal error",
       data: null,
     };
     return c.json(response, 500);
