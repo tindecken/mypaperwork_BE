@@ -4,143 +4,157 @@ import {
   paperworksCategoriesTable,
   paperworksTable,
   type SelectCategory,
+  type SelectDocument,
 } from "../../db/schema";
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { eq, and } from "drizzle-orm";
 import type { IGetPaperworkDetailsResponse } from "../../models/IGetPaperworkDetailsResponse";
-import { S3Client, type S3File } from "bun";
-import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64.js";
+import { s3Client } from "../../libs/s3Client";
+import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64";
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { isAuthenticated } from "../../libs/isAuthenticated";
 
-const client = new S3Client({
-  accessKeyId: process.env["MINIO_ACCESSKEYID"],
-  secretAccessKey: process.env["MINIO_SECRETACCESSKEY"],
-  bucket: process.env["MINIO_BUCKET"],
-  endpoint: process.env["MINIO_ENDPOINT"],
-});
+function isImageFile(filename: string): boolean {
+  const imageExtensions = ['.jpg', '.png', '.jpeg', '.gif', '.svg', '.bmp', '.tiff'];
+  return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+}
+
+async function processDocumentImage(
+  docImage: SelectDocument,
+  c: Context
+): Promise<{
+  id: string;
+  fileName: string;
+  fileSize: number;
+  filePath: string;
+  imageBase64?: string | null;
+  isCover: boolean | null;
+}> {
+  const reducedImageDoc = await db
+    .select({
+      reducedImageFileSize: documentsTable.reducedImageFileSize,
+      reducedImageSizeFilePath: documentsTable.reducedImageSizeFilePath,
+    })
+    .from(documentsTable)
+    .where(and(eq(documentsTable.id, docImage.id), eq(documentsTable.isDeleted, 0)));
+
+  if (reducedImageDoc.length === 0 || !reducedImageDoc[0].reducedImageFileSize) {
+    throw new Error(`Reduced image not found for document ID ${docImage.id}`);
+  }
+
+  const reducedImageFile = s3Client.file(reducedImageDoc[0].reducedImageSizeFilePath!);
+  if (!(await reducedImageFile.exists())) {
+    throw new Error(`Reduced image file not found for document ID ${docImage.id}`);
+  }
+
+  const reduceImageBuffer = await reducedImageFile.arrayBuffer();
+  const base64String = arrayBufferToBase64(reduceImageBuffer);
+
+  return {
+    id: docImage.id,
+    fileName: docImage.fileName,
+    fileSize: reducedImageDoc[0].reducedImageFileSize,
+    filePath: reducedImageDoc[0].reducedImageSizeFilePath!,
+    imageBase64: base64String,
+    isCover: docImage.isCover === 1 ? true : docImage.isCover === 0 ? false : null,
+  };
+}
+
+async function fetchPaperworkCategories(paperworkId: string): Promise<SelectCategory[]> {
+  const paperworkCategories = await db
+    .select()
+    .from(paperworksCategoriesTable)
+    .where(and(
+      eq(paperworksCategoriesTable.paperworkId, paperworkId),
+      eq(paperworksCategoriesTable.isDeleted, 0)
+    ));
+
+  const categories: SelectCategory[] = [];
+  await Promise.all(
+    paperworkCategories.map(async (pwCat) => {
+      const cat = await db
+        .select()
+        .from(categoriesTable)
+        .where(and(
+          eq(categoriesTable.id, pwCat.categoryId),
+          eq(categoriesTable.isDeleted, 0)
+        ));
+      if (cat.length > 0) {
+        categories.push({ ...cat[0] });
+      }
+    })
+  );
+  return categories;
+}
 
 export const getById = new Hono();
 
 getById.get("/get/:paperworkId", async (c) => {
   try {
     const paperworkId = c.req.param("paperworkId");
-    // Check if user is authenticated
+    
     if (!isAuthenticated(c)) {
-      const response: GenericResponseInterface = {
+      return c.json({
         success: false,
         message: "Unauthorized - Authentication required",
-        data: null,
-      };
-      return c.json(response, 401);
+        data: null
+      }, 401);
     }
+
     const paperWork = await db
       .select()
       .from(paperworksTable)
       .where(eq(paperworksTable.id, paperworkId))
-      .limit(1)
-      .execute();
+      .limit(1);
+
     if (paperWork.length === 0) {
-      const res: GenericResponseInterface = {
+      return c.json({
         success: false,
         message: "Paperwork not found",
-        data: null,
-      };
-      return c.json(res, 404);
+        data: null
+      }, 404);
     }
-    const paperworkCategories = await db
-      .select()
-      .from(paperworksCategoriesTable)
-      .where(and(eq(paperworksCategoriesTable.paperworkId, paperworkId), eq(paperworksCategoriesTable.isDeleted, 0)));
-    const categories: SelectCategory[] = [];
-    await Promise.all(
-      paperworkCategories.map(async (pwCat) => {
-        const cat = await db
-          .select()
-          .from(categoriesTable)
-          .where(and(eq(categoriesTable.id, pwCat.categoryId), eq(categoriesTable.isDeleted, 0)));
-        if (cat.length > 0) {
-          categories.push({ ...cat[0] });
-        }
-      })
-    );
-    // get attachments and images
+
+    const categories = await fetchPaperworkCategories(paperworkId);
     const ppwDocuments = await db
       .select()
       .from(documentsTable)
-      .where(and(eq(documentsTable.paperworkId, paperworkId), eq(documentsTable.isDeleted, 0)));
-    const documentImages = ppwDocuments.filter(
-      (doc) =>
-        doc.fileName.toLowerCase().endsWith(".jpg") ||
-        doc.fileName.toLowerCase().endsWith(".png") ||
-        doc.fileName.toLowerCase().endsWith(".jpeg") ||
-        doc.fileName.toLowerCase().endsWith(".gif") ||
-        doc.fileName.toLowerCase().endsWith(".svg") ||
-        doc.fileName.toLowerCase().endsWith(".bmp") ||
-        doc.fileName.toLowerCase().endsWith(".tiff")
-    );
-    const documentImagesWithBlob: {
-      id: string;
-      fileName: string;
-      fileSize: number;
-      filePath: string;
-      imageBase64?: string | null;
-      isCover: boolean | null;
-    }[] = [];
-    const documentAttachments = ppwDocuments.filter((doc) => !documentImages.includes(doc));
-    await Promise.all(
-      documentImages.map(async (docImage) => {
-        const reducedImageDoc = await db
-          .select({
-            reducedImageFileSize: documentsTable.reducedImageFileSize,
-            reducedImageSizeFilePath: documentsTable.reducedImageSizeFilePath,
-          })
-          .from(documentsTable)
-          .where(and(eq(documentsTable.id, docImage.id), eq(documentsTable.isDeleted, 0)));
-        if (reducedImageDoc.length > 0 && reducedImageDoc[0].reducedImageFileSize !== null) {
-          const reducedImageFile: S3File = client.file(reducedImageDoc[0].reducedImageSizeFilePath!);
-          if ((await reducedImageFile.exists()) === false) {
-            const response: GenericResponseInterface = {
-              success: false,
-              message: `Reduced image file not found for document ID ${docImage.id}`,
-              data: null,
-            };
-            return c.json(response, 404);
-          }
-          const reduceImageBuffer = await reducedImageFile.arrayBuffer();
-          const base64String = arrayBufferToBase64(reduceImageBuffer);
-          documentImagesWithBlob.push({
-            id: docImage.id,
-            fileName: docImage.fileName,
-            fileSize: reducedImageDoc[0].reducedImageFileSize!,
-            filePath: reducedImageDoc[0].reducedImageSizeFilePath!,
-            imageBase64: base64String,
-            isCover: docImage.isCover === 1 ? true : docImage.isCover === 0 ? false : null,
-          });
-        }
-      })
+      .where(and(
+        eq(documentsTable.paperworkId, paperworkId),
+        eq(documentsTable.isDeleted, 0)
+      ));
+
+    const documentImages = ppwDocuments.filter(doc => isImageFile(doc.fileName));
+    const documentImagesWithBlob = await Promise.all(
+      documentImages.map(doc => processDocumentImage(doc, c))
     );
 
-    // ... the rest of the component
+    const documentAttachments = ppwDocuments.filter(doc => !isImageFile(doc.fileName));
+
     const ppwDetails: IGetPaperworkDetailsResponse = {
       ...paperWork[0],
-      categories: categories,
+      categories,
       attachments: documentAttachments,
-      images: documentImagesWithBlob as any, // Type assertion to bypass type checking for images property
+      images: documentImagesWithBlob
     };
-    const res: GenericResponseInterface = {
+
+    return c.json({
       success: true,
-      message: `Get paperwork successfully!`,
-      data: ppwDetails,
-    };
-    return c.json(res, 200);
-  } catch (error: any) {
-    const response: GenericResponseInterface = {
+      message: "Get paperwork successfully!",
+      data: ppwDetails
+    }, 200);
+
+  } catch (error) {
+    const message = error instanceof Error 
+      ? `Failed to get paperwork details: ${error.message}`
+      : "Failed to get paperwork details due to an internal error";
+
+    return c.json({
       success: false,
-      message: error ? `Failed to get paperwork details due to an internal error: ${error}${error.code ? ` - ${error.code}` : ''}` : "Failed to get paperwork details due to an internal error",
-      data: null,
-    };
-    return c.json(response, 500);
+      message,
+      data: null
+    }, 500);
   }
 });
