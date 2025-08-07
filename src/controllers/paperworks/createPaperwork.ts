@@ -24,13 +24,6 @@ const schema = T.Object({
   customFields: T.Optional(T.String()),
 });
 
-const client = new S3Client({
-  accessKeyId: process.env["MINIO_ACCESSKEYID"],
-  secretAccessKey: process.env["MINIO_SECRETACCESSKEY"],
-  bucket: process.env["MINIO_BUCKET"],
-  endpoint: process.env["MINIO_ENDPOINT"],
-});
-
 export const createPaperWork = new Hono();
 
 // File upload needs to be handled directly through Hono's file handling middleware

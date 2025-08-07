@@ -45,10 +45,6 @@ async function processDocumentImage(
   }
 
   const reducedImageFile = s3Client.file(reducedImageDoc[0].reducedImageSizeFilePath!);
-  if (!(await reducedImageFile.exists())) {
-    throw new Error(`Reduced image file not found for document ID ${docImage.id}`);
-  }
-
   const reduceImageBuffer = await reducedImageFile.arrayBuffer();
   const base64String = arrayBufferToBase64(reduceImageBuffer);
 
@@ -94,7 +90,6 @@ export const getById = new Hono();
 getById.get("/get/:paperworkId", async (c) => {
   try {
     const paperworkId = c.req.param("paperworkId");
-    
     if (!isAuthenticated(c)) {
       return c.json({
         success: false,
@@ -102,13 +97,11 @@ getById.get("/get/:paperworkId", async (c) => {
         data: null
       }, 401);
     }
-
     const paperWork = await db
       .select()
       .from(paperworksTable)
       .where(eq(paperworksTable.id, paperworkId))
       .limit(1);
-
     if (paperWork.length === 0) {
       return c.json({
         success: false,
