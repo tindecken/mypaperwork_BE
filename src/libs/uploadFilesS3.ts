@@ -50,6 +50,7 @@ export const uploadFilesS3 = async (
         const needsReduction = imageArrayBuffer.byteLength > 1024 * 1024;
         const processedBuffer = needsReduction
           ? await sharp(imageArrayBuffer)
+              .withMetadata()
               .jpeg({
                 quality: process.env["IMAGE_QUALITY"] ? parseInt(process.env["IMAGE_QUALITY"]) : 30,
               })
@@ -117,6 +118,7 @@ export const uploadFilesS3 = async (
       const s3File: S3File = client.file(documentImage.filePath);
       const arrayBuffer = await s3File.arrayBuffer();
       await sharp(arrayBuffer)
+        .rotate()
         .resize(300, 300)
         .jpeg({ mozjpeg: true, quality: 80 })
         .toBuffer()

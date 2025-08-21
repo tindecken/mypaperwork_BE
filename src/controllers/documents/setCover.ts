@@ -63,6 +63,7 @@ setCover.post("/setCover", tbValidator("json", schema), async (c) => {
     const arrayBuffer = await s3File.arrayBuffer();
 
     await sharp(arrayBuffer)
+      .rotate()
       .resize(300, 300)
       .jpeg({ mozjpeg: true, quality: 80 })
       .toBuffer()
