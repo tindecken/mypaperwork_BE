@@ -6,10 +6,11 @@ import { and, eq, sql } from "drizzle-orm";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
-import { S3Client, type S3File } from "bun";
+import { S3Client, type S3File, redis } from "bun";
 import { isAuthenticated } from "../../libs/isAuthenticated";
 import { getUserInfo } from "../../libs/getUserInfo";
 import sharp from "sharp";
+import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64";
 
 const client = new S3Client({
   accessKeyId: process.env["MINIO_ACCESSKEYID"],
@@ -79,6 +80,14 @@ setCover.post("/setCover", tbValidator("json", schema), async (c) => {
           .update(documentsTable)
           .set({ isCover: 1, coverPath: coverFilePath })
           .where(eq(documentsTable.id, documentPaperwork[0].id));
+        // convert buffer to base64 then set redis key with document id and base64
+        const base64 = arrayBufferToBase64(arrayBuffer.buffer as ArrayBuffer);
+        await redis.hmset(`document:${documentPaperwork[0].id}`, [
+          "coverBase64",
+          base64,
+          "fileName",
+          documentPaperwork[0].fileName,
+        ]);
       });
     // update paperwork updatedAt and updatedBy
     await db

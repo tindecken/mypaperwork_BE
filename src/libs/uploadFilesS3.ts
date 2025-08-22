@@ -113,9 +113,10 @@ export const uploadFilesS3 = async (
       const fileExtension = doc.fileName.substring(doc.fileName.lastIndexOf(".") + 1);
       return IMAGE_FILE_TYPE.includes(fileExtension.toLowerCase());
     });
-    // Create cover images for all document images
-    for (const documentImage of documentImages) {
-      const s3File: S3File = client.file(documentImage.filePath);
+    // Create cover image only for the first document image
+    if (documentImages.length > 0) {
+      const firstDocumentImage = documentImages[0];
+      const s3File: S3File = client.file(firstDocumentImage.filePath);
       const arrayBuffer = await s3File.arrayBuffer();
       await sharp(arrayBuffer)
         .rotate()
@@ -123,9 +124,9 @@ export const uploadFilesS3 = async (
         .jpeg({ mozjpeg: true, quality: 80 })
         .toBuffer()
         .then(async (buffer: Buffer) => {
-          const coverFileName = `${documentImage.fileName.substring(
+          const coverFileName = `${firstDocumentImage.fileName.substring(
             0,
-            documentImage.fileName.lastIndexOf(".")
+            firstDocumentImage.fileName.lastIndexOf(".")
           )}_cover.jpeg`;
           const coverFilePath = `${userInfo?.id}\\${paperworkId}\\${coverFileName}`;
           const s3File: S3File = client.file(coverFilePath);
@@ -133,14 +134,14 @@ export const uploadFilesS3 = async (
           await db
             .update(documentsTable)
             .set({ isCover: 1, coverPath: coverFilePath })
-            .where(eq(documentsTable.id, documentImage.id));
+            .where(eq(documentsTable.id, firstDocumentImage.id));
           // convert buffer to base64 then set redis key with document id and base64
           const base64 = arrayBufferToBase64(buffer.buffer as ArrayBuffer);
-          await redis.hmset(`document:${documentImage.id}`, [
+          await redis.hmset(`document:${firstDocumentImage.id}`, [
             "coverBase64",
             base64,
             "fileName",
-            documentImage.fileName,
+            firstDocumentImage.fileName,
           ]);
         });
     }
