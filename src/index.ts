@@ -28,6 +28,7 @@ import { setPasswordForEmail } from './controllers/admin/setPasswordForEmail';
 import { createShareLink } from './controllers/paperworks/createShareLink';
 import { viewSharedPaperwork } from './controllers/paperworks/viewSharedPaperwork';
 import { createTheme } from './controllers/themes/create';
+import { forgotPassword } from './controllers/auth/forgotPassword';
 
 const app = new Hono<{ Variables: AuthType }>({
 	strict: false
@@ -57,6 +58,7 @@ app.notFound((c) => {
 
 // auth
 app.route('/auth', authController)
+app.route('/users', forgotPassword)
 
 // categories
 app.route('/categories', createCategory)
