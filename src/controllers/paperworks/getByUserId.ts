@@ -2,7 +2,7 @@ import { categoriesTable, documentsTable, paperworksCategoriesTable, paperworksT
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { eq, and, count } from "drizzle-orm";
-import { S3Client, type S3File } from "bun";
+import { S3Client, type S3File, redis } from "bun";
 import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64.js";
 import { Hono } from "hono";
 import { getUserInfo } from "../../libs/getUserInfo";
@@ -96,14 +96,31 @@ getByUserId.get("/getAll", tbValidator("query", querySchema), async (c) => {
         let coverBase64: string | null = null;
         let coverFileName: string | null = null;
 
-        if (documentsWithCover.length > 0 && documentsWithCover[0].coverPath) {
+        if (documentsWithCover.length > 0) {
+          // Try Redis cache first
           try {
-            const coverFile: S3File = client.file(documentsWithCover[0].coverPath);
-            const arrayBuffer = await coverFile.arrayBuffer();
-            coverBase64 = arrayBufferToBase64(arrayBuffer);
-            coverFileName = documentsWithCover[0].coverPath.split("/").pop() || null;
-          } catch (error: any) {
-            console.error(`Error fetching cover file for paperwork ID ${paperworkId}:`, error);
+            const cached = await redis.hmget(`document:${documentsWithCover[0].id}`, [
+              "coverBase64",
+              "fileName",
+            ]);
+            if (cached && cached[0]) {
+              coverBase64 = cached[0] as string;
+              coverFileName = (cached[1] as string) ?? null;
+            }
+          } catch (error) {
+            console.error(`Error reading Redis cache for paperwork ID ${paperworkId}:`, error);
+          }
+
+          // Fallback to S3 if not in cache and a cover path exists
+          if (!coverBase64 && documentsWithCover[0].coverPath) {
+            try {
+              const coverFile: S3File = client.file(documentsWithCover[0].coverPath);
+              const arrayBuffer = await coverFile.arrayBuffer();
+              coverBase64 = arrayBufferToBase64(arrayBuffer);
+              coverFileName = documentsWithCover[0].coverPath.split("/").pop() || null;
+            } catch (error: any) {
+              console.error(`Error fetching cover file for paperwork ID ${paperworkId}:`, error);
+            }
           }
         }
 
