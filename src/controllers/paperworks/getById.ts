@@ -15,6 +15,7 @@ import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { isAuthenticated } from "../../libs/isAuthenticated";
+import { redis } from "bun";
 
 function isImageFile(filename: string): boolean {
   const imageExtensions = ['.jpg', '.png', '.jpeg', '.gif', '.svg', '.bmp', '.tiff'];
@@ -32,6 +33,38 @@ async function processDocumentImage(
   imageBase64?: string | null;
   isCover: boolean | null;
 }> {
+  // If this document is the cover, try Redis first for the cover image base64
+  if (docImage.isCover === 1) {
+    const cover = await redis.hmget(`document:${docImage.id}`, ["coverBase64", "fileName"]);
+    if (cover && cover[0]) {
+      return {
+        id: docImage.id,
+        fileName: docImage.fileName,
+        // We don't store cover file size in cache; fall back to existing fileSize field
+        fileSize: docImage.fileSize,
+        filePath: docImage.coverPath ?? docImage.filePath,
+        imageBase64: cover[0] as string,
+        isCover: true,
+      };
+    }
+    // Fallback to S3 cover file if available
+    if (docImage.coverPath) {
+      const coverFile = s3Client.file(docImage.coverPath);
+      const coverBuffer = await coverFile.arrayBuffer();
+      const coverBase64 = arrayBufferToBase64(coverBuffer);
+      return {
+        id: docImage.id,
+        fileName: docImage.fileName,
+        fileSize: docImage.fileSize,
+        filePath: docImage.coverPath,
+        imageBase64: coverBase64,
+        isCover: true,
+      };
+    }
+    // If no coverPath, continue to reduced image fallback below
+  }
+
+  // Non-cover or no cover available: use reduced image info
   const reducedImageDoc = await db
     .select({
       reducedImageFileSize: documentsTable.reducedImageFileSize,
@@ -42,6 +75,19 @@ async function processDocumentImage(
 
   if (reducedImageDoc.length === 0 || !reducedImageDoc[0].reducedImageFileSize) {
     throw new Error(`Reduced image not found for document ID ${docImage.id}`);
+  }
+
+  // Try Redis cache for reduced image base64 (if available)
+  const reducedFromCache = await redis.hmget(`document:${docImage.id}`, ["reducedBase64"]);
+  if (reducedFromCache && reducedFromCache[0]) {
+    return {
+      id: docImage.id,
+      fileName: docImage.fileName,
+      fileSize: reducedImageDoc[0].reducedImageFileSize,
+      filePath: reducedImageDoc[0].reducedImageSizeFilePath!,
+      imageBase64: reducedFromCache[0] as string,
+      isCover: docImage.isCover === 1 ? true : docImage.isCover === 0 ? false : null,
+    };
   }
 
   const reducedImageFile = s3Client.file(reducedImageDoc[0].reducedImageSizeFilePath!);
