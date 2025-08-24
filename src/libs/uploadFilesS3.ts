@@ -66,6 +66,14 @@ export const uploadFilesS3 = async (
         // Save the file (original or reduced)
         const reducedS3File: S3File = client.file(reducedFilePath);
         await reducedS3File.write(processedBuffer, { type: "image/jpeg" });
+        // convert buffer to base64 then set redis key with document id and base64
+        const base64 = arrayBufferToBase64(processedBuffer.buffer as ArrayBuffer);
+        await redis.hmset(`document:${ulid()}`, [
+          "reducedBase64",
+          base64,
+          "fileName",
+          reducedFileName,
+        ]);
         const reducedImageFileSize = processedBuffer.byteLength;
 
         // insert into documents table
