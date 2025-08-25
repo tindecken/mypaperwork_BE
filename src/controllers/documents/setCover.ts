@@ -88,6 +88,8 @@ setCover.post("/setCover", tbValidator("json", schema), async (c) => {
           "fileName",
           documentPaperwork[0].fileName,
         ]);
+        const ttlSeconds = parseInt(process.env["REDIS_DEFAUTL_KEY_EXPIRED"] ?? "86400", 10) || 86400;
+        await redis.expire(`document:${documentPaperwork[0].id}`, ttlSeconds);
       });
     // update paperwork updatedAt and updatedBy
     await db

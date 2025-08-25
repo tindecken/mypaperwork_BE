@@ -74,6 +74,8 @@ export const uploadFilesS3 = async (
           "fileName",
           reducedFileName,
         ]);
+        const ttlSeconds = parseInt(process.env["REDIS_DEFAUTL_KEY_EXPIRED"] ?? "86400", 10) || 86400;
+        await redis.expire(`document:${ulid()}`, ttlSeconds);
         const reducedImageFileSize = processedBuffer.byteLength;
 
         // insert into documents table
@@ -151,6 +153,8 @@ export const uploadFilesS3 = async (
             "fileName",
             firstDocumentImage.fileName,
           ]);
+          const ttlSeconds = parseInt(process.env["REDIS_DEFAUTL_KEY_EXPIRED"] ?? "86400", 10) || 86400;
+          await redis.expire(`document:${firstDocumentImage.id}`, ttlSeconds);
         });
     }
     const response: GenericResponseInterface = {
