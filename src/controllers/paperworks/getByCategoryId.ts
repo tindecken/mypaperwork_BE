@@ -7,20 +7,13 @@ import {
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { eq, and, count } from "drizzle-orm";
-import { S3Client, type S3File, redis } from "bun";
-import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64.js";
 import { Hono } from "hono";
 import { getUserInfo } from "../../libs/getUserInfo";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
 import { IGetAllPaperworkResponse } from "../../models/IGetAllPaperworkResponse";
+import { getPaperworkCover } from "../../libs/getPaperworkCover";
 
-const client = new S3Client({
-  accessKeyId: process.env["MINIO_ACCESSKEYID"],
-  secretAccessKey: process.env["MINIO_SECRETACCESSKEY"],
-  bucket: process.env["MINIO_BUCKET"],
-  endpoint: process.env["MINIO_ENDPOINT"],
-});
 1;
 
 const querySchema = T.Object({
@@ -180,39 +173,9 @@ getByCategoryId.get(
       // get covers for paperworks
       await Promise.all(
         ppws.map(async (ppw) => {
-          const documentsWithCover = await db
-            .select()
-            .from(documentsTable)
-            .where(
-              and(
-                eq(documentsTable.paperworkId, ppw.id),
-                eq(documentsTable.isCover, 1),
-                eq(documentsTable.isDeleted, 0)
-              )
-            );
-          // update ppws with cover
-          if (documentsWithCover.length > 0) {
-            // get cover from redis
-            const cover = await redis.hmget(
-              `document:${documentsWithCover[0].id}`,
-              ["coverBase64", "fileName"]
-            );
-            if (cover) {
-              ppw.coverBase64 = cover[0];
-              ppw.coverFileName = cover[1];
-            } else {
-              const s3CoverFile: S3File = client.file(
-                documentsWithCover[0].coverPath!
-              );
-              const coverBuffer = await s3CoverFile.arrayBuffer();
-              if (coverBuffer instanceof ArrayBuffer) {
-                ppw.coverBase64 = arrayBufferToBase64(coverBuffer);
-              } else {
-                console.error("coverBuffer is not an array:", coverBuffer);
-              }
-              ppw.coverFileName = documentsWithCover[0].fileName;
-            }
-          }
+          const { coverBase64, coverFileName } = await getPaperworkCover(ppw.id);
+          ppw.coverBase64 = coverBase64;
+          ppw.coverFileName = coverFileName;
         })
       );
       // get number of document for each paperwork

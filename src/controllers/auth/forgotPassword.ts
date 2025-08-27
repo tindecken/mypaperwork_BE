@@ -26,7 +26,6 @@ forgotPassword.post("/forgotPassword", tbValidator("json", schema), async (c) =>
       message: (data as any)?.message ?? "Password reset request sent successfully!",
       data: data,
     };
-
     return c.json(response, 201);
   } catch (error) {
     console.error("Error sending password reset request:", error);

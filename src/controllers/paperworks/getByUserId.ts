@@ -2,20 +2,13 @@ import { categoriesTable, documentsTable, paperworksCategoriesTable, paperworksT
 import { db } from "../../db";
 import type { GenericResponseInterface } from "../../models/GenericResponseInterface";
 import { eq, and, count } from "drizzle-orm";
-import { S3Client, type S3File, redis } from "bun";
-import { arrayBufferToBase64 } from "../../libs/arrayBufferToBase64.js";
 import { Hono } from "hono";
 import { getUserInfo } from "../../libs/getUserInfo";
 import { Type as T } from "@sinclair/typebox";
 import { tbValidator } from "@hono/typebox-validator";
 import { IGetAllPaperworkResponse } from "../../models/IGetAllPaperworkResponse";
+import { getPaperworkCover } from "../../libs/getPaperworkCover";
 
-const client = new S3Client({
-  accessKeyId: process.env["MINIO_ACCESSKEYID"],
-  secretAccessKey: process.env["MINIO_SECRETACCESSKEY"],
-  bucket: process.env["MINIO_BUCKET"],
-  endpoint: process.env["MINIO_ENDPOINT"],
-});
 1;
 
 const querySchema = T.Object({
@@ -80,49 +73,8 @@ getByUserId.get("/getAll", tbValidator("query", querySchema), async (c) => {
           })
         );
 
-        // Find document that is set as cover
-        const documentsWithCover = await db
-          .select()
-          .from(documentsTable)
-          .where(
-            and(
-              eq(documentsTable.paperworkId, paperworkId),
-              eq(documentsTable.isCover, 1),
-              eq(documentsTable.isDeleted, 0)
-            )
-          );
-
-        // Get cover image if exists
-        let coverBase64: string | null = null;
-        let coverFileName: string | null = null;
-
-        if (documentsWithCover.length > 0) {
-          // Try Redis cache first
-          try {
-            const cached = await redis.hmget(`document:${documentsWithCover[0].id}`, [
-              "coverBase64",
-              "fileName",
-            ]);
-            if (cached && cached[0]) {
-              coverBase64 = cached[0] as string;
-              coverFileName = (cached[1] as string) ?? null;
-            }
-          } catch (error) {
-            console.error(`Error reading Redis cache for paperwork ID ${paperworkId}:`, error);
-          }
-
-          // Fallback to S3 if not in cache and a cover path exists
-          if (!coverBase64 && documentsWithCover[0].coverPath) {
-            try {
-              const coverFile: S3File = client.file(documentsWithCover[0].coverPath);
-              const arrayBuffer = await coverFile.arrayBuffer();
-              coverBase64 = arrayBufferToBase64(arrayBuffer);
-              coverFileName = documentsWithCover[0].coverPath.split("/").pop() || null;
-            } catch (error: any) {
-              console.error(`Error fetching cover file for paperwork ID ${paperworkId}:`, error);
-            }
-          }
-        }
+        // Get cover image (from Redis cache, then S3 fallback)
+        const { coverBase64, coverFileName } = await getPaperworkCover(paperworkId);
 
         // Add paperwork with all details to response data
         responseData.push({
