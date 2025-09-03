@@ -29,6 +29,8 @@ import { createShareLink } from './controllers/paperworks/createShareLink';
 import { viewSharedPaperwork } from './controllers/paperworks/viewSharedPaperwork';
 import { createTheme } from './controllers/themes/create';
 import { forgotPassword } from './controllers/auth/forgotPassword';
+import { readFileSync } from 'fs';
+import { hostname } from 'os';
 
 const app = new Hono<{ Variables: AuthType }>({
 	strict: false
@@ -45,7 +47,7 @@ app.use("*", async (c, next) => {
   	c.set("session", session.session);
   	return next();
 }, cors({
-	origin: ['http://tindecken.xyz', 'https://tindecken.xyz', 'http://localhost', 'http://localhost:1000', 'http://localhost:3001', 'https://paperwork.tindecken.xyz', 'https://paperworkapi.tindecken.xyz'],
+	origin: ['http://tindecken.xyz', 'https://tindecken.xyz', 'http://localhost', 'https://localhost:1000', 'http://localhost:1000', 'http://localhost:3001', 'https://paperwork.tindecken.xyz', 'https://paperworkapi.tindecken.xyz', 'https://192.168.1.99:9090', 'http://192.168.1.99:9090', 'capacitor://192.168.1.99:9090', 'capacitor://192.168.1.99', 'https://192.168.1.3:9090', 'https://192.168.1.3:1000'],
 	allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 	allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
 	credentials: true,
@@ -96,8 +98,17 @@ app.route('/themes', createTheme)
 // admin
 app.route('/admin', setPasswordForEmail)
 
+// Load SSL/TLS certificates
+// For development, you can generate self-signed certs using openssl
+const _options = {
+	key: readFileSync('./localhost-key.pem'),
+	cert: readFileSync('./localhost-cert.pem'),
+  }
+
 export default { 
+  hostname: '0.0.0.0',
   port: process.env.PORT || 3001, 
   fetch: app.fetch, 
-  idleTimeout: 60
+  idleTimeout: 60,
+  tls: _options
 } 
