@@ -34,3 +34,7 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+#ssl
+localhost-key.pem
+localhost-cert.pem
