@@ -19,12 +19,12 @@ export const auth = betterAuth({
         },
         ipAddress: {
 			ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip", "true-client-ip"],
-			disableIpTracking: false
+        disableIpTracking: false
 		},
     },
     trustedOrigins: [
         "https://paperwork.tindecken.xyz",
-        "http://localhost:1000"],
+        "http://localhost:1000", "https://10.10.0.27:1000", "https://localhost:1000"],
     emailAndPassword: {
         enabled: true,
         minPasswordLength: 6,

@@ -116,7 +116,7 @@ createShareLink.post(
       // Create a new share link
       const shareId = ulid();
       const shareToken = ulid();
-      const shareUrl = `${process.env.FRONTEND_URL || "http://localhost:1000"}/#/share/${shareToken}`;
+      const shareUrl = `${process.env.FRONTEND_URL || "https://localhost:1000"}/#/share/${shareToken}`;
       const expiresAt = addDays(new Date(), 1); // 1 day expiration
       
       // Insert the new share record

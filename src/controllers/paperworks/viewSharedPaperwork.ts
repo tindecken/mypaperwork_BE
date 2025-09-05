@@ -35,7 +35,7 @@ viewSharedPaperwork.post(
       const shareToken = validResult.data.shareToken;
       
       // Extract the token from the share URL to find the record
-      const shareUrl = `${process.env.FRONTEND_URL || "http://localhost:1000"}/#/share/${shareToken}`;
+      const shareUrl = `${process.env.FRONTEND_URL || "https://localhost:1000"}/#/share/${shareToken}`;
       
       // Check if share link exists and is not expired
       const sharedPaperwork = await db
