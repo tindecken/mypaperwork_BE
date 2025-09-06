@@ -37,7 +37,7 @@ getUserTheme.get("/getUserTheme", async (c) => {
         defaultThemeId = defaultTheme[0].id;
       }
       const createdUserThemeId = ulid();
-      const createdUserTheme = await db.insert(usersThemesTable).values({
+      await db.insert(usersThemesTable).values({
         id: createdUserThemeId,
         userId: userInfo.id,
         themeId: defaultThemeId,

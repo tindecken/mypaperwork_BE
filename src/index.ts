@@ -100,15 +100,18 @@ app.route('/admin', setPasswordForEmail)
 
 // Load SSL/TLS certificates
 // For development, you can generate self-signed certs using openssl
-const _options = {
-	key: readFileSync('./localhost-key.pem'),
-	cert: readFileSync('./localhost-cert.pem'),
-  }
+const isProd = process.env.NODE_ENV === 'production'
+const _options = !isProd
+  ? {
+      key: readFileSync('./localhost-key.pem'),
+      cert: readFileSync('./localhost-cert.pem'),
+    }
+  : undefined
 
 export default { 
 //   hostname: '0.0.0.0',
   port: process.env.PORT || 3001, 
   fetch: app.fetch, 
   idleTimeout: 60,
-  tls: _options
-} 
+  ...(_options ? { tls: _options } : {})
+}
