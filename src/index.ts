@@ -51,7 +51,8 @@ app.use("*", async (c, next) => {
 	allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 	allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
 	credentials: true,
-	exposeHeaders: ['Content-Length', 'X-Kuma-Revision']
+	exposeHeaders: ['Content-Length', 'X-Kuma-Revision', 'X-Retry-After'],
+	maxAge: 10 * 60
 }));
 app.use(compress({ encoding: "gzip"}))
 app.notFound((c) => {
