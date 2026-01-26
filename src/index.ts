@@ -38,14 +38,14 @@ const app = new Hono<{ Variables: AuthType }>({
 
 app.use("*", async (c, next) => {
 	const session = await auth.api.getSession({ headers: c.req.raw.headers });
-  	if (!session) {
-    	c.set("user", null);
-    	c.set("session", null);
-    	return next();
-  	}
-  	c.set("user", session.user);
-  	c.set("session", session.session);
-  	return next();
+	if (!session) {
+		c.set("user", null);
+		c.set("session", null);
+		return next();
+	}
+	c.set("user", session.user);
+	c.set("session", session.session);
+	return next();
 }, cors({
 	origin: ['http://tindecken.xyz', 'https://tindecken.xyz', 'http://localhost', 'https://localhost:1000', 'http://localhost:1000', 'http://localhost:3001', 'https://paperwork.tindecken.xyz', 'https://paperworkapi.tindecken.xyz', 'https://192.168.1.99:9090', 'http://192.168.1.99:9090', 'capacitor://192.168.1.99:9090', 'capacitor://192.168.1.99', 'https://192.168.1.3:9090', 'https://192.168.1.3:1000', 'https://10.10.0.27:1000', 'https://10.10.0.27:3001'],
 	allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -54,9 +54,14 @@ app.use("*", async (c, next) => {
 	exposeHeaders: ['Content-Length', 'X-Kuma-Revision', 'X-Retry-After'],
 	maxAge: 10 * 60
 }));
-app.use(compress({ encoding: "gzip"}))
+app.use(compress({ encoding: "gzip" }))
 app.notFound((c) => {
-  return c.text('404 Route not found !', 404)
+	return c.text('404 Route not found !', 404)
+})
+
+// test
+app.get('/test', (c) => {
+	return c.text('it works!')
 })
 
 // auth
@@ -104,16 +109,16 @@ app.route('/admin', setPasswordForEmail)
 const isProd = process.env.NODE_ENV === 'production'
 console.log('isProd', isProd)
 const _options = !isProd
-  ? {
-      key: readFileSync('./localhost-key.pem'),
-      cert: readFileSync('./localhost-cert.pem'),
-    }
-  : undefined
+	? {
+		key: readFileSync('./localhost-key.pem'),
+		cert: readFileSync('./localhost-cert.pem'),
+	}
+	: undefined
 
-export default { 
-//   hostname: '0.0.0.0',
-  port: process.env.PORT || 3001, 
-  fetch: app.fetch, 
-  idleTimeout: 60,
-  ...(_options ? { tls: _options } : {})
+export default {
+	//   hostname: '0.0.0.0',
+	port: process.env.PORT || 3001,
+	fetch: app.fetch,
+	idleTimeout: 60,
+	...(_options ? { tls: _options } : {})
 }
