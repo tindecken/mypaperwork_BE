@@ -6,7 +6,7 @@ import { ulid } from "ulid";
 import { createTransport } from "nodemailer";
 import { eq, sql } from "drizzle-orm";
 import { themesTable, usersThemesTable } from "../db/schema";
- 
+
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
         provider: "sqlite", // or "mysql", "sqlite",
@@ -18,9 +18,9 @@ export const auth = betterAuth({
             },
         },
         ipAddress: {
-			ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip", "true-client-ip"],
-        disableIpTracking: false
-		},
+            ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip", "true-client-ip"],
+            disableIpTracking: false
+        },
     },
     trustedOrigins: [
         "https://paperwork.tindecken.xyz",
@@ -30,24 +30,21 @@ export const auth = betterAuth({
         minPasswordLength: 6,
         maxPasswordLength: 100,
         // Reset passwrord via email: (doc) https://www.better-auth.com/docs/authentication/email-password#request-password-reset
-        sendResetPassword: async ({user, url, token}, request) => { 
-            url = process.env.RESET_PASSWORD_URL + "/#/reset-password?token=" +token;
+        sendResetPassword: async ({ user, url, token }, request) => {
+            url = process.env.RESET_PASSWORD_URL + "/#/reset-password?token=" + token;
             const transporter = createTransport({
-                host: "smtp.useplunk.com",
-                secure: true,
-			    port: 465,
+                service: "gmail",
                 auth: {
-                    user: "plunk",
-                    pass: process.env.PLUNK_SMTP_PASSWORD
-                }
+                    user: process.env.SEND_FROM!,
+                    pass: process.env.SMTP_PASSWORD
+                },
             });
-            const mailOptions = {
-                from: process.env.PLUNK_SEND_FROM,
+            const info = await transporter.sendMail({
+                from: process.env.SEND_FROM!,
                 to: user.email,
                 subject: "Paperwork - Reset Password",
                 text: `Click the link below to reset your password: ${url}`
-            };
-            await transporter.sendMail(mailOptions);
+            });
         }
     },
     user: {
@@ -103,19 +100,19 @@ export const auth = betterAuth({
     },
     hooks: {
         after: createAuthMiddleware(async (ctx) => {
-            if(ctx.path.startsWith("/sign-up")){
+            if (ctx.path.startsWith("/sign-up")) {
                 const newSession = ctx.context.newSession;
-                if(newSession){
-                    const userId = newSession.user.id   
+                if (newSession) {
+                    const userId = newSession.user.id
                     const defaultTheme = await db.select().from(themesTable).where(eq(themesTable.isDefault, 1));
                     let defaultThemeId = "";
-                    if(defaultTheme.length === 0){
+                    if (defaultTheme.length === 0) {
                         console.log('Default theme not found')
                     } else {
                         defaultThemeId = defaultTheme[0].id;
                     }
                     const userTheme = await db.select().from(usersThemesTable).where(eq(usersThemesTable.userId, userId));
-                    if(userTheme.length === 0){
+                    if (userTheme.length === 0) {
                         await db.insert(usersThemesTable).values({
                             id: ulid(),
                             userId: userId,

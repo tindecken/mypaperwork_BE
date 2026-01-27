@@ -33,38 +33,6 @@ async function processDocumentImage(
   imageBase64?: string | null;
   isCover: boolean | null;
 }> {
-  // If this document is the cover, try Redis first for the cover image base64
-  if (docImage.isCover === 1) {
-    const cover = await redis.hmget(`document:${docImage.id}`, ["coverBase64", "fileName"]);
-    if (cover && cover[0]) {
-      return {
-        id: docImage.id,
-        fileName: docImage.fileName,
-        // We don't store cover file size in cache; fall back to existing fileSize field
-        fileSize: docImage.fileSize,
-        filePath: docImage.coverPath ?? docImage.filePath,
-        imageBase64: cover[0] as string,
-        isCover: true,
-      };
-    }
-    // Fallback to S3 cover file if available
-    if (docImage.coverPath) {
-      const coverFile = s3Client.file(docImage.coverPath);
-      const coverBuffer = await coverFile.arrayBuffer();
-      const coverBase64 = arrayBufferToBase64(coverBuffer);
-      return {
-        id: docImage.id,
-        fileName: docImage.fileName,
-        fileSize: docImage.fileSize,
-        filePath: docImage.coverPath,
-        imageBase64: coverBase64,
-        isCover: true,
-      };
-    }
-    // If no coverPath, continue to reduced image fallback below
-  }
-
-  // Non-cover or no cover available: use reduced image info
   const reducedImageDoc = await db
     .select({
       reducedImageFileSize: documentsTable.reducedImageFileSize,
@@ -80,6 +48,7 @@ async function processDocumentImage(
   // Try Redis cache for reduced image base64 (if available)
   const reducedFromCache = await redis.hmget(`document:${docImage.id}`, ["reducedBase64"]);
   if (reducedFromCache && reducedFromCache[0]) {
+    console.log("Reduced image found in cache");
     return {
       id: docImage.id,
       fileName: docImage.fileName,
@@ -90,6 +59,7 @@ async function processDocumentImage(
     };
   }
 
+  console.log("Reduced image not found in cache");
   const reducedImageFile = s3Client.file(reducedImageDoc[0].reducedImageSizeFilePath!);
   const reduceImageBuffer = await reducedImageFile.arrayBuffer();
   const base64String = arrayBufferToBase64(reduceImageBuffer);
